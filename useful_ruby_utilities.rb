@@ -8,21 +8,35 @@ end
 class Object
   def assert(bool, message = 'assertion failure')
       # this means 'if the -d command passed to ruby-- we don't use that every right now...if $DEBUG
-                raise AssertionFailure.new(message) unless bool
-                    end
-  #end
+                if not bool
+                  print "ack assertion failed! [#{message}]\n"
+                  begin
+                    raise AssertionFailure.new(message)
+                  rescue AssertionFailure => a
+                    print a.backtrace.join("\n")
+                    print "\n"
+                    raise
+                  end
+               end
+  end
+end
+
+def assertEqual(a, b, errorString = "")
+        if a != b
+            print "ERROR NOT EQUAL: [" + a.to_s + "] != [" + b.to_s + "]\n"
+        end
 end
 
 require 'socket' # gotta override a previously instantiated socket!
 class Socket
         class << self
-        def gethostip
-                return getHostIP
-        end
-        def getHostIP
-            ipInt = gethostbyname(gethostname())[3]
-            return "%d.%d.%d.%d" % [ipInt[0], ipInt[1], ipInt[2], ipInt[3]]
-        end
+          def gethostip
+                  return getHostIP
+          end
+          def getHostIP
+              ipInt = gethostbyname(gethostname())[3]
+              return "%d.%d.%d.%d" % [ipInt[0], ipInt[1], ipInt[2], ipInt[3]]
+          end
         end
 end
 
