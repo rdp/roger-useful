@@ -23,7 +23,9 @@ end
 
 def assertEqual(a, b, errorString = "")
         if a != b
-            print "ERROR NOT EQUAL: [" + a.to_s + "] != [" + b.to_s + "]\n"
+            message = "ERROR NOT EQUAL: [" + a.to_s + "] != [" + b.to_s + "]\n"
+            print message
+            raise AssertionFailure.new(message)
         end
 end
 
@@ -37,7 +39,27 @@ class Socket
               ipInt = gethostbyname(gethostname())[3]
               return "%d.%d.%d.%d" % [ipInt[0], ipInt[1], ipInt[2], ipInt[3]]
           end
+          
         end
+end
+
+
+class TCPSocket
+          attr_accessor :amPastHeader 
+
+          def nukeHeaderAndSetBoolIfThere(fromThis)
+              locationOfSplit = fromThis.index("\r\n\r\n")
+              if locationOfSplit != nil
+                    self.amPastHeader = true
+                    returnable = fromThis[locationOfSplit + 4..1000000] # what a hack!
+                    print "returning #{returnable}"
+                    return returnable
+              else
+                    print "very odd! -- [#{fromThis}] must be in the header still!"
+                    return ""
+                    
+               end
+          end
 end
 
 class Object
@@ -112,4 +134,11 @@ def writeReliable(stuffIn)
   flush
 end
 end
+
+# code for exception handling
+#    begin
+#      go(bm)
+#   rescue  => detail
+#     print detail.backtrace.join("\n")
+#   end
 
