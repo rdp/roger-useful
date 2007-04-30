@@ -5,6 +5,7 @@
 class AssertionFailure < StandardError # from http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/41639
 end
 
+
 class Object
   def assert(bool, message = 'assertion failure')
       # this means 'if the -d command passed to ruby-- we don't use that every right now...if $DEBUG
@@ -141,4 +142,14 @@ end
 #   rescue  => detail
 #     print detail.backtrace.join("\n")
 #   end
+
+# code for threading
+# return Thread.new(bm) { |bm|
+
+#    begin
+#      startClient(fullUrl, bm)
+#   rescue  => detail
+#     print detail.backtrace.join("\n")
+#   end
+# }
 
