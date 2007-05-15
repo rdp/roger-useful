@@ -206,7 +206,20 @@ end
 # }
 
 
-class Array # from http://snippets.dzone.com/posts/show/898
+class Array
+
+
+def average
+  sum = 0
+  self.each { |entry|
+   sum += entry
+  }
+  return sum / self.length
+end
+  
+
+
+ # from http://snippets.dzone.com/posts/show/898
   # Chooses a random array element from the receiver based on the weights
   # provided. If _weights_ is nil, then each element is weighed equally.
   # 
