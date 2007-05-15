@@ -5,6 +5,18 @@
 class AssertionFailure < StandardError # from http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/41639
 end
 
+class String
+def shiftOutputAndResulting number
+  output = self[0..(number -1)]
+  rest = self[number..10000000]
+  if rest != nil and rest.length == 0
+    rest = nil
+  end
+  return output, rest # lodo better funcs
+
+end
+end
+
 
 class Object
   def assert(bool, message = 'assertion failure')
@@ -106,7 +118,36 @@ class String
 end
 
 class Hash
+
+  def addToKey(key, addThis)
+    if self.has_key? key
+      self[key] += addThis
+    else
+      self[key] = addThis
+    end
+  end
+  
+  def keyValueOrZero key
+    if self.has_key? key
+      return self[key]
+    else
+      return 0
+    end
+  end
+
+
+ def pairWithGreatestKey # same as max but doesn't err... todo report!
+ greatestKeyPair = nil
+ self.each_pair do |key, value|
+     if greatestKeyPair == nil or key > greatestKeyPair[0] # todo more fast!
+       greatestKeyPair = [key, value] # to be able to pass them both out
+     end
+  end
+ return greatestKeyPair
+ end
+
 def greatestValue
+
  greatestValue = nil
   self.each_pair do |key, value|
      if greatestValue == nil or value > greatestValue[1] # todo more fast!
@@ -226,7 +267,7 @@ class Array # from http://snippets.dzone.com/posts/show/898
     list, result = self.dup, []
     until list.empty?
       # pick an element
-      result << list.random(weights)
+      result << list.randomItem(weights)
       # remove the element from the temporary list and its weight
       weights.delete_at(list.index(result.last))
       list.delete result.last
