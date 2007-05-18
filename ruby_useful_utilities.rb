@@ -1,5 +1,5 @@
 #Roger Pack
-
+require 'pp'
 # to use  require "useful_ruby_utilities"
 
 class AssertionFailure < StandardError # from http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/41639
@@ -38,6 +38,7 @@ def assertEqual(a, b, errorString = "")
         if a != b
             message = "ERROR NOT EQUAL: [" + a.to_s + "] != [" + b.to_s + "]\n"
             print message
+            pp a, "!=", b
             raise AssertionFailure.new(message)
         end
 end
@@ -118,6 +119,37 @@ class String
 end
 
 class Hash
+
+  def multiplyKeysBy(this)
+    output = {}
+    self.each_key { |key|
+      output[key * this] = self[key]
+    
+    }
+    return output
+  end
+  def keysToInts
+    output = {}
+    self.each_key { |key|
+      output[key.to_i] = self[key]
+    
+    }
+    return output
+  
+  end
+
+  def sumValues
+   sum = nil
+   self.each_key { |key|
+    if not sum.nil?
+      sum += self[key]
+    else
+      sum = self[key] # keep this non class specific :)
+    end
+   
+   }
+   return sum
+  end
 
   def addToKey(key, addThis)
     if self.has_key? key
@@ -205,10 +237,43 @@ end
 #   end
 # }
 
+class Float
+
+  def truncateToDecimal(decimal)
+    return ("%.0#{decimal}f" % self).to_f
+  end
+end # class
 
 class Array
-
-
+    def joinOnAllThreadsInArray
+      while not self.empty?
+       waitForThisThread = self.shift
+       assert waitForThisThread.class == Thread
+       waitForThisThread.join
+      end
+    end
+    
+    def collapsePointsToIntegers
+      return toSummedByIntegerHash.sort
+    end
+    
+   def toSummedByIntegerHash # lodo rename sum
+      finalArray = {}
+      self.each { |pointDuple|
+        finalArray.addToKey(pointDuple[0].to_i, pointDuple[1])
+      }
+      return finalArray
+   end
+   
+   def dupleArrayToSummedHash
+      finalArray = {}
+      self.each { |pointDuple|
+        finalArray.addToKey(pointDuple[0], pointDuple[1])
+      }
+      return finalArray
+    
+   end
+   
 def average
   sum = 0
   self.each { |entry|
