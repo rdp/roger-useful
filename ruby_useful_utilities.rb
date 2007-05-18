@@ -5,6 +5,15 @@ require 'pp'
 class AssertionFailure < StandardError # from http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/41639
 end
 
+def goGetFile(urlToGet, whereItGoes = nil)
+    wgetCommand = "wget #{urlToGet}"
+    if whereItGoes
+      wgetCommand += " -O #{whereItGoes}"
+    end
+   # todo double check this, see if wget exists, etc...
+    system(wgetCommand)
+    # lodo add the ruby way in here :)
+end
 
 def isGoodExecutableFile?(thisFileName)
   if File.executable_real? thisFileName
