@@ -5,6 +5,23 @@ require 'pp'
 class AssertionFailure < StandardError # from http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/41639
 end
 
+
+def isGoodExecutableFile?(thisFileName)
+  if File.executable_real? thisFileName
+    return true
+  end
+ begin
+    a = IO.popen(thisFileName, "w+")
+    returnVal = true
+    # if that cleared then the exec worked
+    a.close
+ rescue => details
+  returnVal = false
+ end
+ return returnVal # lodo there's some bug with this
+end
+
+
 class String
 def shiftOutputAndResulting number
   output = self[0..(number -1)]
