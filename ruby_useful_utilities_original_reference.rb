@@ -241,7 +241,7 @@ def writeReliable(stuffIn)
       received = write(stuffIn)
       stuffIn = stuffIn[received..10000000] # todo find a better way :)
       totalSent += received
-  end
+  end# todo test!
   flush
 end
 end
@@ -262,6 +262,11 @@ end
 #     print detail.backtrace.join("\n")
 #   end
 # }
+#
+# return Thread.new(bm) { |bm|
+#      startClient(fullUrl, bm)
+# }
+
 
 class Float
 
