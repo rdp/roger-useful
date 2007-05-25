@@ -2,6 +2,8 @@
 require 'pp'
 # to use  require "useful_ruby_utilities"
 
+
+
 class AssertionFailure < StandardError # from http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/41639
 end
 
@@ -11,8 +13,17 @@ def goGetFile(urlToGet, whereItGoes = nil)
       wgetCommand += " -O #{whereItGoes}"
     end
    # todo double check this, see if wget exists, etc...
-    system(wgetCommand)
-    # lodo add the ruby way in here :)
+    if system(wgetCommand)
+      return
+    else
+      require 'open-uri'
+      writeOut = open(whereItGoes, "wb")
+      writeOut.write(open(urlToGet).read)
+      writeOut.close
+      print "ACK NO WGET!"
+      #puts "downloaded" + urlToGet + "\n"
+    end
+    
 end
 
 def isGoodExecutableFile?(thisFileName)
