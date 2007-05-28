@@ -44,6 +44,11 @@ end
 
 class String
 def shiftOutputAndResulting number
+  if number.class == Float
+    number = number.ceil
+ #   print "warning you passed me a float? huh?\n" lodo debug
+  end
+  assert number != 0
   output = self[0..(number -1)]
   rest = self[number..10000000]
   if rest != nil and rest.length == 0
