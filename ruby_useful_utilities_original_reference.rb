@@ -43,6 +43,14 @@ end
 
 
 class String
+
+def sanitize
+  self.gsub(/[`\.?*\/\\|<>!&;:"'~@#\$%\^\(\)]/, '_')
+end
+def sanitize!
+  self.gsub!(/[`\.?*\/\\|<>!&;:"'~@#\$%\^\(\)]/, '_')
+end
+
 def shiftOutputAndResulting number
   if number.class == Float
     number = number.ceil
