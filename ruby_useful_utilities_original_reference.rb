@@ -170,14 +170,24 @@ end
 
 class Hash
 
+  def divideValuesBy(this)
+    this = this.to_f
+    output = {}
+    self.each_pair { |key, value|
+      output[key] = self[key] / this
+    }
+    return output
+
+  end
+
   def multiplyKeysBy(this)
     output = {}
     self.each_key { |key|
       output[key * this] = self[key]
-    
     }
     return output
   end
+  
   def keysToInts
     output = {}
     self.each_key { |key|
@@ -300,6 +310,19 @@ class Float
 end # class
 
 class Array
+  def cullDeadThreadsInArray
+    out = []
+    for thread in self
+      if thread.alive?
+        out << thread
+      else
+       # it is dead, let it die
+      end
+    end
+    return out
+    
+  end
+
     def joinOnAllThreadsInArray
       while not self.empty?
        waitForThisThread = self.shift
@@ -420,3 +443,9 @@ end
   
   
 end
+
+# how to use a mutex
+#      mutex = Mutex.new
+#            mutex.synchronize do
+#              proceed.signal
+#            end
