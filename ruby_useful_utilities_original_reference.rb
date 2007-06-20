@@ -1,7 +1,7 @@
 #Roger Pack
 require 'pp'
 # to use  require "useful_ruby_utilities"
-
+# lodo move in
 
 
 class AssertionFailure < StandardError # from http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/41639
@@ -93,7 +93,29 @@ def assertEqual(a, b, errorString = "")
         end
 end
 
-require 'socket' # gotta override a previously instantiated socket!
+class Dir
+class << self
+
+  def mkPath path
+  # lodo File.directory? "good_dir/bad_dir" -> True
+    oldDir = Dir.pwd
+    finalDir = "/"
+    for part in path.split("/")
+        if part != ""
+          finalDir = finalDir + part + "/"
+          if not File.directory? part then 
+            Dir.mkdir part
+          end
+          Dir.chdir(part) # unfortunately necessary
+        end
+    end
+    Dir.chdir(oldDir)
+  end
+  
+end
+end
+
+require 'socket' # gotta override a previously instantiated socket! eck
 class Socket
         class << self
           def gethostip
