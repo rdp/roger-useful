@@ -93,6 +93,16 @@ def assertEqual(a, b, errorString = "")
   end
 end
 
+def debugMe(scriptName)
+  if (defined? $PROGRAM_NAME and $PROGRAM_NAME.index("rdebug") and ARGV[-1] == scriptName)     
+      ARGV.pop
+      print "running in debug" + scriptName + "\n"
+      return true
+  else
+      return false
+  end
+end
+
 class Dir
   class << self
     
