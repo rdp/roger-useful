@@ -107,6 +107,9 @@ class Dir
             Dir.mkdir part
           end
           Dir.chdir(part) # unfortunately necessary
+        else
+            # assume it was beginning. if so chdir / so we can make it the right way :)
+            Dir.chdir("/")
         end
       end
       Dir.chdir(oldDir)
