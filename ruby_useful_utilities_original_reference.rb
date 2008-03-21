@@ -26,6 +26,34 @@ def goGetFile(urlToGet, whereItGoes = nil)
   
 end
 
+
+
+# STATIC TYPING EXAMPLE
+
+class Number
+ def Number.matches? param
+   return true if param.class == Fixnum or param.class == Float or param.class == BigDecimal
+ end
+end
+
+
+def verify_params params_to_verify
+  for param, should_match_this_class in params_to_verify do
+    if should_match_this_class.respond_to? :matches?
+      raise 'poor parameter' unless should_match_this_class.matches? param
+    else
+      raise 'poor parameter' unless param.class == should_match_this_class
+    end
+  end
+
+end
+
+def method_1 a, b, c
+ verify_params a => Number, b => String
+
+end
+
+
 def isGoodExecutableFile?(thisFileName)
   if File.executable_real? thisFileName
     return true
