@@ -29,7 +29,7 @@ end
 
 
 # STATIC TYPING EXAMPLE
-
+# ??? Numeric === obj
 class Number
  def Number.matches? param
    return true if param.class == Fixnum or param.class == Float or param.class == BigDecimal

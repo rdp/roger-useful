@@ -1,4 +1,4 @@
-#!/opt/local/bin/ruby -w
+#!/Users/roger/ppc_local/bin/ruby -w
 # this program syncs between two database tables to make a recipient match a donor table
 # so the question still remains--does navicat maintain 'id' integrity on inserts?  Should we?
 # note this lacks 'transaction's thus far
@@ -6,11 +6,19 @@
 # TODO sql escape things better (does it a little already)
 # TODO could use a 'mass insert' to speed things up (one giant giant string), or...that rails plugin that does the same.  If that hurts then maybe some 'O(1) string' (if).
 # could do: something along the lines of rsync for database tables--calculate some checksums, foreign host, etc., anything to save on bandwidth lol. It is, however, true that most changes come from the "latter end" of tables so...probably has tons of potential savings
+# could do: download the next table while you're comparing the first muhaha
+# TODO handle ssh => ssh
+# could do: download from both people at the same time, per table, or what not muhaha
+# could do: some more free's in here
+# could do: at the beginning verify all tables exist on from, to databases, and all have the same structure
+# could do: at the end output 'just the summary' (and the to, from db's)
+# could do: timings per table
 
   require 'optparse'
  
   # define some databases and how you connect with them, if foreign
   mac = {:host => '127.0.0.1', :user => 'root', :password => '', :db => 'local_leadgen_dev', :ssh_host => nil}
+# define more here!
   db_from_info = mac
   db_to_info = production
 
@@ -19,7 +27,9 @@
   my_options = {}
   default_tables_to_sync_if_none_passed = ['programs']
   tables_to_sync = []
-  verbose = true
+  verbose = true # default
+  # make sure they used options
+  raise 'poor parameter use -- expected first parameter to start with a -' if ARGV.length > 0  and ARGV[0][0..0] != '-'
   OptionParser.new do |opts|
     opts.banner = "Usage: #{__FILE__} [options]"
 
@@ -40,10 +50,9 @@
       end
     end
 
-    opts.on("-do_it", "--do_it", "do it setting") do
-      print "DOING IT RUNNING LIVE QUERIES\n"
+    opts.on("-commit", "--commit", " tell us whether or not to actually run queries") do
+      print "DOING IT COMMITTING LIVE QUERIES\n"
       actually_run_queries = true
-      raise if db_to_info == production
     end
 
     opts.on("-z", "--extra_sql=STRING", "run this sql") do |sql|
@@ -53,11 +62,11 @@
   end.parse!
 
   tables_to_sync = default_tables_to_sync_if_none_passed if tables_to_sync.empty? # allow for the defaults
+  raise if db_to_info == production and actually_run_queries # I never wanted to commit to one db
   raise unless db_from_info and db_to_info
   raise if actually_run_queries and db_to_info == production
 
   require 'rubygems'
-  require 'ruby-debug'
   require "mysql"
 
 class Hash
@@ -102,14 +111,14 @@ end
    print "\n#{db_from_info[:ssh_host] || db_from_info[:host]}:#{db_from_info[:db]} #{tables_to_sync.inspect}\n"
    print "\t=> #{db_to_info[:ssh_host] || db_to_info[:host]}:#{db_to_info[:db]} #{tables_to_sync.inspect}\n"
    
-   commit_style = actually_run_queries ? 'MORPHING' : 'previewing (no changes made)'
+   commit_style = actually_run_queries ? '---COMMITTING----' : 'previewing (no changes made)'
    print "#{commit_style} run"
    start_time = Time.now 
    begin
      # connect to the MySQL server
-     print 'connecting...'
+     print 'connecting to to DB...', "\n"
      db_to = Mysql.real_connect(db_to_info[:host], db_to_info[:user], db_to_info[:password], db_to_info[:db], db_to_info[:port], nil, Mysql::CLIENT_COMPRESS)
-     print 'connected to To DB '
+     print 'connected to To DB, now connecting to from DB ', "\n"
      db_from = Mysql.real_connect(db_from_info[:host], db_from_info[:user], db_from_info[:password], db_from_info[:db], db_from_info[:port], nil, Mysql::CLIENT_COMPRESS)
      print "connected to From DB \n"
    rescue Mysql::Error => e
@@ -120,15 +129,15 @@ end
      print "Did you forget to start this ssh tunnel?"
      if db_from_info[:ssh_host] or db_to_info[:ssh_host]
 		print "please run this in another screen:\n" # assumes that we only have one ssh host, in from. redo if this doesn't hold
-		print "ssh -L 4000:localhost:3306 #{db_from_info[:ssh_user] || db_to_info[:ssh_user]}@#{db_from_info[:ssh_host] || db_to_info[:ssh_host]} -N \n" # NOTE DOES NOT YET ALLOW FOR TWO FOREIGN DB's
+	print "ssh -L 4000:localhost:3306 #{db_from_info[:ssh_user] || db_to_info[:ssh_user]}@#{db_from_info[:ssh_host] || db_to_info[:ssh_host]} \n" # NOTE DOES NOT YET ALLOW FOR TWO SSH DB's
      end
      exit
    ensure
      # disconnect from server here :)
    end
 
-   # issue a retrieval query, perform a fetch loop, print
-   # the row count, and free the result set
+  summary_information = '' # so we can print it all (again), at the end
+
   for table in tables_to_sync  do
    print "start #{commit_style} table #{table}" + "**" * 10 + "\n"
    all_to_keys_not_yet_processed = {}
@@ -138,7 +147,6 @@ end
 	all_to_keys_not_yet_processed[to_element['id']] = to_element
    }
 
-	
    res = db_from.query("SELECT * from #{table}")
    count_updated = 0
    count_created = 0
@@ -174,30 +182,45 @@ end
 	all_to_keys_not_yet_processed.delete(from_element['id'])
    end
    print "\n" if (count_updated>0 or count_created>0) if verbose
+
+
    count_deleted = all_to_keys_not_yet_processed.length
-   for id in all_to_keys_not_yet_processed.keys do
-	double_check_query = "select * from #{table} where id = #{id}" # I think the only purpose of this is to make sure that we won't be deleting double. Does this work?
-	double_check_result = db_to.query double_check_query
-	if double_check_result.num_rows == 1
-		double_check_result.each_hash {|to_nuke| 
-			query = "delete from #{table} where id = #{id}"
-			print "DELETE query for #{to_nuke['name']} #{query}\n" if verbose
-			db_to.query query if actually_run_queries
-		}
-	else
-		print 'arr refusing to delete double id!'
-		exit
-	end
+   if count_deleted > 0
+     ids = []
+     for id in all_to_keys_not_yet_processed.keys do
+       ids << id 
+     end
+     double_check_all_query = "select * from #{table} where id IN (#{ids.join(',')})" # this allows us to make sure we don't delete any doubled ones (which would be a weird situation and too odd to handle), and also so we can have a nice verbose  'we are deleting this row' message
+     double_check_result = db_to.query double_check_all_query
+
+     raise 'weird deleted--got back strange number of rows -- refusing to delete' unless double_check_result.num_rows == count_deleted
+
+     victims = {}
+
+     double_check_result.each_hash {|victim|
+        raise 'duplicate' if victims[victim['id']]
+        victims[victim['id']] = victim['name']
+     }
+     for id in all_to_keys_not_yet_processed.keys do
+       query = "delete from #{table} where id = #{id}"
+       print "DELETE query, for #{victims[id]} is #{query}\n" if verbose
+       db_to.query query if actually_run_queries
+     end
    end
 
-  res.free
-  print "done #{commit_style}  #{table} -- updated #{count_updated}, created #{count_created}, deleted #{count_deleted}\n"
+   res.free
+   print "done #{commit_style} "
+   summary =  "#{table} -- updated #{count_updated}, created #{count_created}, deleted #{count_deleted}\n"
+   print summary
+   summary_information << summary
   end
   if my_options[:extra_sql] and actually_run_queries
     print "doing sql #{my_options[:extra_sql]}\n"
     result = db_to.query my_options[:extra_sql]
-    pp "got result", result 
+    require 'pp'
+    pp "got sql result", result 
   end
   db_from.close if db_from
   db_to.close if db_to
-  print "took #{Time.now - start_time}"
+  print "summary:---------------------------#{commit_style}'ed\n", summary_information
+  print "total time #{Time.now - start_time}"
