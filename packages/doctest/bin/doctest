@@ -10,3 +10,4 @@ rescue LoadError
 end
 
 require 'doctest'
+DocTest.run
