@@ -2,7 +2,8 @@
 # the 'inline for rubydoc' option
 # Fix so raising errors validates -- currently ignores
 # low priority:
-# does...
+# multi line strings
+# option to run each in its own directory
 # tell them how to change dirs on their own [add an end guy?]
 # run it from the directory it's in
 # #doctest_end
@@ -27,8 +28,9 @@ end
 BINDING = binding()
 
 class DocTest
-  CODE_REGEX = Regexp.new(/(>>|irb.*?>) (.*)/)
-  RESULT_REGEX = Regexp.new(/=> (.*)/)
+  CODE_REGEX = Regexp.new(/^(>>|irb.*?>) (.*)/)
+  RESULT_REGEX = Regexp.new(/^=> (.*)/)
+  EXCEPTION_REGEX = Regexp.new(/^([A-Z][A-Za-z0-9]*):/)
 
   def get_ruby_files(dir_name)
     ruby_file_names = []
@@ -75,21 +77,28 @@ now test with different ordered hashes
 >> {1=>":0x123456", 2=>2, 3=> 3, 4=>4,5=>5}
 => {4=>4, 1=>":0x123456", 2=>2, 3=>3, 5=>5}
 =end
-require 'rubygems'; require 'ruby-debug';
+   def dbg
+     require 'rubygems'; require 'ruby-debug'; debugger
+  end
   def run_doc_tests(doc_test)
     statement, report = '', ''
     wrong, passed = 0, 0
     doc_test.split("\n").each do |line|
       case line
         when CODE_REGEX
-        statement << CODE_REGEX.match(line)[2]
-        when RESULT_REGEX
-          expected_result_string = normalize_result(RESULT_REGEX.match(line)[1])
+          statement << CODE_REGEX.match(line)[2]
+        when RESULT_REGEX, EXCEPTION_REGEX
+          if line =~ RESULT_REGEX
+		expected_result_string = normalize_result(RESULT_REGEX.match(line)[1])
+	  else
+		raise unless line =~ EXCEPTION_REGEX
+		expected_result_string = $1
+	  end
+	
           begin
 		result_we_got = eval(statement, BINDING)
 	  rescue Exception => e
-		result_we_got = e
-	        next	
+		result_we_got = e.class
           end
        
           they_match = false 
