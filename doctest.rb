@@ -1,19 +1,18 @@
 # todo:
 # the 'inline for rubydoc' option
-# Fix so raising errors validates -- currently ignores
 # low priority:
+# Fix so raising errors validates -- currently ignores
 # multi line strings
 # option to run each in its own directory
 # tell them how to change dirs on their own [add an end guy?]
-# run it from the directory it's in
 # #doctest_end
-# copy tests out to a file with their name on it, run that :) [so people can debug if wanted?]
 # WAY more line logic
 # some way of reusing tests, like classes [?] or functions :) -- this doctest gets this replaced with this :P
 # normal code inline [maybe that can raise if it errs, maybe more]
 # check python's --what they got?
 # use rspec, how can it improve?
 # todo better params
+
 if ARGV[0] == '--help'
   print "
   use: doctest file_name.rb (or directory_name): default '.'
