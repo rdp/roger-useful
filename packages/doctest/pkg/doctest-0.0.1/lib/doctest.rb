@@ -67,6 +67,7 @@ class DocTest
 #doctest should match with hashes
 >> {1=>1, 2=>2, 3=> 3, 4=>4,5=>5}
 => {5=>5, 1=>1, 2=>2, 3=>3, 4=>4}
+now test with different ordered hashes
 >> {1=>1, 2=>2, 3=> 3, 4=>4,5=>5}
 => {4=>4, 1=>1, 2=>2, 3=>3, 5=>5}
 >> {1=>":0x123456", 2=>2, 3=> 3, 4=>4,5=>5}
@@ -141,25 +142,27 @@ require 'rubygems'; require 'ruby-debug';
 
 end
 
-# parse command line--currently just 'filename' or 'directory name'
-runner = DocTest.new
-if File.directory? ARGV[0] || ''
-  ruby_file_names = runner.get_ruby_files(ARGV[0])
-elsif File.exist? ARGV[0] || ''
-  ruby_file_names = [ARGV[0]]
-else
-  ruby_file_names = runner.get_ruby_files('.')
+if $0 == __FILE__
+ # parse command line--currently just 'filename' or 'directory name'
+ runner = DocTest.new
+ if File.directory? ARGV[0] || ''
+   ruby_file_names = runner.get_ruby_files(ARGV[0])
+ elsif File.exist? ARGV[0] || ''
+   ruby_file_names = [ARGV[0]]
+ else
+   ruby_file_names = runner.get_ruby_files('.')
+ end
+ 
+ total_report = "Looking for doctests in a total of #{ruby_file_names.length} possible files\n"
+ total_files, total_tests, total_succeeded, total_failed = 0, 0, 0, 0
+ ruby_file_names.each do |ruby_file_name|
+   tests, succeeded, failed, report = runner.process_ruby_file(ruby_file_name)
+   total_files += 1 if tests > 0
+   total_tests += tests
+   total_succeeded += succeeded
+   total_failed += failed
+   total_report << report << "\n" unless report.empty?
+ end
+ total_report << "Total files: #{total_files}, total tests: #{total_tests}, assertions succeeded: #{total_succeeded}, assertions failed: #{total_failed}"
+ puts total_report
 end
-
-total_report = "Looking for doctests in a total of #{ruby_file_names.length} possible files\n"
-total_files, total_tests, total_succeeded, total_failed = 0, 0, 0, 0
-ruby_file_names.each do |ruby_file_name|
-  tests, succeeded, failed, report = runner.process_ruby_file(ruby_file_name)
-  total_files += 1 if tests > 0
-  total_tests += tests
-  total_succeeded += succeeded
-  total_failed += failed
-  total_report << report << "\n" unless report.empty?
-end
-total_report << "Total files: #{total_files}, total tests: #{total_tests}, assertions succeeded: #{total_succeeded}, assertions failed: #{total_failed}"
-puts total_report

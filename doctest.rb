@@ -1,8 +1,10 @@
-# code todo:
+# todo:
 # the 'inline for rubydoc' option
+# do we WANT to run it from the current directory?  I think we'll want to run it from the current working, always.
+# low priority:
+# does...
+# does raising errors work?
 # run it from the directory it's in
-# hashes need to work
-# useless:
 # #doctest_end
 # copy tests out to a file with their name on it, run that :) [so people can debug if wanted?]
 # WAY more line logic
@@ -49,8 +51,8 @@ class DocTest
 #doctest normalize substring
 >> a = DocTest.new
 => #<DocTest:0x37012c>
->> a.normalize_result('0xtion:0x1876bc0 @p')
-=> "0xtion:0xXXXXXXXX @p"
+>> a.normalize_result('0xtion:0x1876bc0 @@p')
+=> "0xtion:0xXXXXXXXX @@p"
 =end
   def normalize_result(input)
     input.gsub(/:0x([a-f0-9]){5,8}/, ':0xXXXXXXXX')  # makes them all 8 digits long
@@ -67,6 +69,7 @@ class DocTest
 #doctest should match with hashes
 >> {1=>1, 2=>2, 3=> 3, 4=>4,5=>5}
 => {5=>5, 1=>1, 2=>2, 3=>3, 4=>4}
+now test with different ordered hashes
 >> {1=>1, 2=>2, 3=> 3, 4=>4,5=>5}
 => {4=>4, 1=>1, 2=>2, 3=>3, 5=>5}
 >> {1=>":0x123456", 2=>2, 3=> 3, 4=>4,5=>5}
@@ -82,7 +85,11 @@ require 'rubygems'; require 'ruby-debug';
         statement << CODE_REGEX.match(line)[2]
         when RESULT_REGEX
           expected_result_string = normalize_result(RESULT_REGEX.match(line)[1])
-          result_we_got = eval(statement, BINDING)
+          begin
+		result_we_got = eval(statement, BINDING)
+	  rescue Exception => e
+		result_we_got = e
+          end
        
           they_match = false 
           if result_we_got.class.ancestors.include? Hash
@@ -112,8 +119,11 @@ require 'rubygems'; require 'ruby-debug';
   def process_ruby_file(file_name)
     tests, succeeded, failed = 0, 0, 0
     file_report = ''
-    code = File.read(file_name)
-  
+    original_dir = Dir.pwd
+    Dir.chdir File.dirname(file_name)# change to its working directory
+    p 'current dir', Dir.pwd
+    code = File.read(File.basename(file_name))
+
     startup_code_for_this_file = code.scan(/begin\s#setup_doctest once_per_file(.*?)=end/m)
   
     if startup_code_for_this_file.length > 0
@@ -125,7 +135,7 @@ require 'rubygems'; require 'ruby-debug';
     # todo would be nice to have multiple tests in the same comment block
     # so a scan + sub scan for doctests
     code.scan(/=begin\s#doctest([^\n]*)\n(.*?)=end/m) do |doc_test| # could do--replace default named ones with their line number :)
-      require file_name # might as well have its functions available to itself :P
+      require File.basename(file_name) # might as well have its functions available to itself :P
       # todo could tear out anything loaded after each file, I suppose, as active support does
       file_report << "\n Testing '#{doc_test[0]}'..."
       passed, wrong, report = run_doc_tests(doc_test[1])
@@ -135,31 +145,35 @@ require 'rubygems'; require 'ruby-debug';
       failed += wrong
     end
     file_report = "Processing '#{file_name}'" + file_report unless file_report.empty?
+    Dir.chdir original_dir
     return tests, succeeded, failed, file_report
   end
 
 
 end
 
-# parse command line--currently just 'filename' or 'directory name'
-runner = DocTest.new
-if File.directory? ARGV[0] || ''
-  ruby_file_names = runner.get_ruby_files(ARGV[0])
-elsif File.exist? ARGV[0] || ''
-  ruby_file_names = [ARGV[0]]
-else
-  ruby_file_names = runner.get_ruby_files('.')
+if $0 == __FILE__
+ # parse command line--currently just 'filename' or 'directory name'
+ runner = DocTest.new
+ if File.directory? ARGV[0] || ''
+   ruby_file_names = runner.get_ruby_files(ARGV[0])
+ elsif File.exist? ARGV[0] || ''
+   ruby_file_names = [ARGV[0]]
+ else
+   ruby_file_names = runner.get_ruby_files('.')
+ end
+ 
+ total_report = "Looking for doctests in a total of #{ruby_file_names.length} possible files\n"
+ total_files, total_tests, total_succeeded, total_failed = 0, 0, 0, 0
+ ruby_file_names.each do |ruby_file_name|
+   tests, succeeded, failed, report = runner.process_ruby_file(ruby_file_name)
+   total_files += 1 if tests > 0
+   total_tests += tests
+   total_succeeded += succeeded
+   total_failed += failed
+   total_report << report << "\n" unless report.empty?
+ end
+ total_report << "Total files: #{total_files}, total tests: #{total_tests}, assertions succeeded: #{total_succeeded}, assertions failed: #{total_failed}"
+ puts total_report
 end
 
-total_report = "Looking for doctests in a total of #{ruby_file_names.length} possible files\n"
-total_files, total_tests, total_succeeded, total_failed = 0, 0, 0, 0
-ruby_file_names.each do |ruby_file_name|
-  tests, succeeded, failed, report = runner.process_ruby_file(ruby_file_name)
-  total_files += 1 if tests > 0
-  total_tests += tests
-  total_succeeded += succeeded
-  total_failed += failed
-  total_report << report << "\n" unless report.empty?
-end
-total_report << "Total files: #{total_files}, total tests: #{total_tests}, assertions succeeded: #{total_succeeded}, assertions failed: #{total_failed}"
-puts total_report
