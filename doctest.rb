@@ -11,104 +11,150 @@
 # check python's --what they got?
 # use rspec, how can it improve?
 # todo better params
+if ARGV[0] == '--help'
+  print "
+  use: doctest file_name.rb (or directory_name): default '.'
+  -- note it recurses and scans all .rb in that directory and its subdirectories
+  ex: doctest .
+  doctest file.rb
+  doctest dir #also scans its subdirs
+"
+  exit
+end
 
-CODE_REGEX = Regexp.new(/(>>|irb.*?>) (.*)/)
-RESULT_REGEX = Regexp.new(/=> (.*)/)
+BINDING = binding()
 
-def get_ruby_files(dir_name)
-  ruby_file_names = []
+class DocTest
+  CODE_REGEX = Regexp.new(/(>>|irb.*?>) (.*)/)
+  RESULT_REGEX = Regexp.new(/=> (.*)/)
+
+  def get_ruby_files(dir_name)
+    ruby_file_names = []
   
-  Dir.foreach(dir_name) do |file_name|
-    unless file_name == '.' || file_name == '..'
-      full_name = File.join(dir_name, file_name)
-      if /.*\.rb$/ =~ full_name
-        ruby_file_names << full_name
-      elsif File.directory? full_name
-        sub_files = get_ruby_files(full_name)
-        ruby_file_names.concat(sub_files) unless sub_files.empty?
+    Dir.foreach(dir_name) do |file_name|
+      unless file_name == '.' || file_name == '..'
+        full_name = File.join(dir_name, file_name)
+        if /.*\.rb$/ =~ full_name
+          ruby_file_names << full_name
+        elsif File.directory? full_name
+          sub_files = get_ruby_files(full_name)
+          ruby_file_names.concat(sub_files) unless sub_files.empty?
+        end
       end
     end
-  end
   
-  ruby_file_names
-end
+    ruby_file_names
+  end
+=begin
+#doctest normalize substring
+>> a = DocTest.new
+=> #<DocTest:0x37012c>
+>> a.normalize_result('0xtion:0x1876bc0 @p')
+=> "0xtion:0xXXXXXXXX @p"
+=end
+  def normalize_result(input)
+    input.gsub(/:0x([a-f0-9]){5,8}/, ':0xXXXXXXXX')  # makes them all 8 digits long
+  end
 
-def normalize_result(input)
-  input.gsub(/:0x([a-f0-9]){8}/, ':0xXXXXXXXX')
-end
+  def failure_report(statement, expected_result, result)
+    report = "\n FAILED" #add line number logic here
+    report << " Code: " << statement << "\n"
+    report << " Expected: " << expected_result << "\n"
+    report << " But got: " << result
+  end
 
-def failure_report(statement, expected_result, result)
-  report = "\n FAILED" #add line number logic here
-  report << " Code: " << statement << "\n"
-  report << " Expected: " << expected_result << "\n"
-  report << " But got: " << result
-end
+=begin
+#doctest should match with hashes
+>> {1=>1, 2=>2, 3=> 3, 4=>4,5=>5}
+=> {5=>5, 1=>1, 2=>2, 3=>3, 4=>4}
+>> {1=>1, 2=>2, 3=> 3, 4=>4,5=>5}
+=> {4=>4, 1=>1, 2=>2, 3=>3, 5=>5}
+>> {1=>":0x123456", 2=>2, 3=> 3, 4=>4,5=>5}
+=> {4=>4, 1=>":0x123456", 2=>2, 3=>3, 5=>5}
+=end
+require 'rubygems'; require 'ruby-debug';
+  def run_doc_tests(doc_test)
+    statement, report = '', ''
+    wrong, passed = 0, 0
+    doc_test.split("\n").each do |line|
+      case line
+        when CODE_REGEX
+        statement << CODE_REGEX.match(line)[2]
+        when RESULT_REGEX
+          expected_result_string = normalize_result(RESULT_REGEX.match(line)[1])
+          result_we_got = eval(statement, BINDING)
+       
+          they_match = false 
+          if result_we_got.class.ancestors.include? Hash
+            # change them to 'kind of real' hashes, so that we cancompare them and have comparison work--hashes sometimes display in different orders when printed
+            expected_result = eval(expected_result_string)
+	    if eval(normalize_result(result_we_got.inspect)) == expected_result # todo some tests for this with whack-o stuff thrown in  :)
+		# the Hashes matched, string-wise
+		they_match = true
+	    end
+          end
 
-def run_doc_tests(doc_test)
-  execution_context = binding()
-  statement, report = '', ''
-  wrong, passed = 0, 0
-  doc_test.split("\n").each do |line|
-    case line
-      when CODE_REGEX
-      statement << CODE_REGEX.match(line)[2]
-      when RESULT_REGEX
-      expected_result = normalize_result(RESULT_REGEX.match(line)[1])
-      result = normalize_result(eval(statement, execution_context).inspect)
-      unless result == expected_result
-        report << failure_report(statement, expected_result, result)
-        wrong += 1
-      else
-        passed += 1
+	  they_match = true if expected_result_string =~ /#doctest_failable/
+          result_string = normalize_result(result_we_got.inspect)
+	  they_match = true if result_string == expected_result_string
+          unless they_match
+            report << failure_report(statement, expected_result_string, result_string)
+            wrong += 1
+          else
+            passed += 1
+          end
+          statement = '' # reset it for the next round
       end
-      statement = ''
     end
+    return passed, wrong, report
   end
-  return passed, wrong, report
-end
 
-def process_ruby_file(file_name)
-  tests, succeeded, failed = 0, 0, 0
-  file_report = ''
-  code = File.read(file_name)
+  def process_ruby_file(file_name)
+    tests, succeeded, failed = 0, 0, 0
+    file_report = ''
+    code = File.read(file_name)
   
-  startup_code_for_this_file = code.scan(/begin\s#setup_doctest once_per_file(.*?)=end/m)
+    startup_code_for_this_file = code.scan(/begin\s#setup_doctest once_per_file(.*?)=end/m)
   
-  if startup_code_for_this_file.length > 0
-    raise 'can only do one_time_file_setup declaration once' if startup_code_for_this_file.length > 1 or startup_code_for_this_file[0].length > 1
-    startup_code_for_this_file = startup_code_for_this_file[0][0]
-    eval startup_code_for_this_file
+    if startup_code_for_this_file.length > 0
+      raise 'can only do one_time_file_setup declaration once' if startup_code_for_this_file.length > 1 or startup_code_for_this_file[0].length > 1
+      startup_code_for_this_file = startup_code_for_this_file[0][0]
+      eval startup_code_for_this_file
+    end
+  
+    # todo would be nice to have multiple tests in the same comment block
+    # so a scan + sub scan for doctests
+    code.scan(/=begin\s#doctest([^\n]*)\n(.*?)=end/m) do |doc_test| # could do--replace default named ones with their line number :)
+      require file_name # might as well have its functions available to itself :P
+      # todo could tear out anything loaded after each file, I suppose, as active support does
+      file_report << "\n Testing '#{doc_test[0]}'..."
+      passed, wrong, report = run_doc_tests(doc_test[1])
+      file_report += (wrong == 0 ? "OK" : report)
+      tests += 1
+      succeeded += passed
+      failed += wrong
+    end
+    file_report = "Processing '#{file_name}'" + file_report unless file_report.empty?
+    return tests, succeeded, failed, file_report
   end
-  
-  # todo would be nice to have multiple tests in the same comment block
-  # so a scan + sub scan for doctests
-  code.scan(/=begin\s#doctest([^\n]*)\n(.*?)=end/m) do |doc_test| # could do--replace default named ones with their line number :)
-    require file_name # might as well have its functions available to itself :P
-    # todo could tear out anything loaded after each file, I suppose, as active support does
-    file_report << "\n Testing '#{doc_test[0]}'..."
-    passed, wrong, report = run_doc_tests(doc_test[1])
-    file_report += (wrong == 0 ? "OK" : report)
-    tests += 1
-    succeeded += passed
-    failed += wrong
-  end
-  file_report = "Processing '#{file_name}'" + file_report unless file_report.empty?
-  return tests, succeeded, failed, file_report
+
+
 end
 
 # parse command line--currently just 'filename' or 'directory name'
+runner = DocTest.new
 if File.directory? ARGV[0] || ''
-  ruby_file_names = get_ruby_files(ARGV[0])
+  ruby_file_names = runner.get_ruby_files(ARGV[0])
 elsif File.exist? ARGV[0] || ''
   ruby_file_names = [ARGV[0]]
 else
-  ruby_file_names = get_ruby_files('.')
+  ruby_file_names = runner.get_ruby_files('.')
 end
 
 total_report = "Looking for doctests in a total of #{ruby_file_names.length} possible files\n"
 total_files, total_tests, total_succeeded, total_failed = 0, 0, 0, 0
 ruby_file_names.each do |ruby_file_name|
-  tests, succeeded, failed, report = process_ruby_file(ruby_file_name)
+  tests, succeeded, failed, report = runner.process_ruby_file(ruby_file_name)
   total_files += 1 if tests > 0
   total_tests += tests
   total_succeeded += succeeded
