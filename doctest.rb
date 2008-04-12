@@ -1,6 +1,7 @@
 # todo:
 # the 'inline for rubydoc' option
 # low priority:
+# make it even more robust to errors--if it errs, look for internal hashes, convert
 # Fix so raising errors validates -- currently ignores
 # multi line strings
 # option to run each in its own directory
@@ -103,14 +104,14 @@ now test with different ordered hashes
           they_match = false 
           if result_we_got.class.ancestors.include? Hash
             # change them to 'kind of real' hashes, so that we cancompare them and have comparison work--hashes sometimes display in different orders when printed
-            expected_result = eval(expected_result_string)
-	    if eval(normalize_result(result_we_got.inspect)) == expected_result # todo some tests for this with whack-o stuff thrown in  :)
+            expected_result = eval(expected_result_string, BINDING)
+	    if eval(normalize_result(result_we_got.inspect), BINDING) == expected_result # todo some tests for this with whack-o stuff thrown in  :)
 		# the Hashes matched, string-wise
 		they_match = true
 	    end
           end
 
-	  they_match = true if expected_result_string =~ /#doctest_failable/
+	  they_match = true if expected_result_string =~ /#doctest_fail_ok/
           result_string = normalize_result(result_we_got.inspect)
 	  they_match = true if result_string == expected_result_string
           unless they_match
@@ -135,7 +136,11 @@ now test with different ordered hashes
     if startup_code_for_this_file.length > 0
       raise 'can only do one_time_file_setup declaration once' if startup_code_for_this_file.length > 1 or startup_code_for_this_file[0].length > 1
       startup_code_for_this_file = startup_code_for_this_file[0][0]
-      eval startup_code_for_this_file
+      begin
+      	eval startup_code_for_this_file, BINDING
+      rescue Exception => e
+	print "Uh oh unable to execute startup code for #{file_name}...continuing #{e}\n"
+      end
     end
   
     # todo would be nice to have multiple tests in the same comment block
