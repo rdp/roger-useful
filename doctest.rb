@@ -1,9 +1,9 @@
 # todo:
 # the 'inline for rubydoc' option
-# do we WANT to run it from the current directory?  I think we'll want to run it from the current working, always.
+# Fix so raising errors validates -- currently ignores
 # low priority:
 # does...
-# does raising errors work?
+# tell them how to change dirs on their own [add an end guy?]
 # run it from the directory it's in
 # #doctest_end
 # copy tests out to a file with their name on it, run that :) [so people can debug if wanted?]
@@ -89,6 +89,7 @@ require 'rubygems'; require 'ruby-debug';
 		result_we_got = eval(statement, BINDING)
 	  rescue Exception => e
 		result_we_got = e
+	        next	
           end
        
           they_match = false 
@@ -119,10 +120,7 @@ require 'rubygems'; require 'ruby-debug';
   def process_ruby_file(file_name)
     tests, succeeded, failed = 0, 0, 0
     file_report = ''
-    original_dir = Dir.pwd
-    Dir.chdir File.dirname(file_name)# change to its working directory
-    p 'current dir', Dir.pwd
-    code = File.read(File.basename(file_name))
+    code = File.read file_name
 
     startup_code_for_this_file = code.scan(/begin\s#setup_doctest once_per_file(.*?)=end/m)
   
@@ -135,7 +133,7 @@ require 'rubygems'; require 'ruby-debug';
     # todo would be nice to have multiple tests in the same comment block
     # so a scan + sub scan for doctests
     code.scan(/=begin\s#doctest([^\n]*)\n(.*?)=end/m) do |doc_test| # could do--replace default named ones with their line number :)
-      require File.basename(file_name) # might as well have its functions available to itself :P
+      require file_name # might as well have its functions available to itself :P
       # todo could tear out anything loaded after each file, I suppose, as active support does
       file_report << "\n Testing '#{doc_test[0]}'..."
       passed, wrong, report = run_doc_tests(doc_test[1])
@@ -144,8 +142,7 @@ require 'rubygems'; require 'ruby-debug';
       succeeded += passed
       failed += wrong
     end
-    file_report = "Processing '#{file_name}'" + file_report unless file_report.empty?
-    Dir.chdir original_dir
+    file_report = "Processing '#{file_name}' from current directory " + file_report unless file_report.empty?
     return tests, succeeded, failed, file_report
   end
 
