@@ -1,16 +1,18 @@
-# code todo:
+# todo:
 # the 'inline for rubydoc' option
-# run it from the directory it's in
-# hashes need to work
-# useless:
+# low priority:
+# Fix so raising errors validates -- currently ignores
+# multi line strings
+# option to run each in its own directory
+# tell them how to change dirs on their own [add an end guy?]
 # #doctest_end
-# copy tests out to a file with their name on it, run that :) [so people can debug if wanted?]
 # WAY more line logic
 # some way of reusing tests, like classes [?] or functions :) -- this doctest gets this replaced with this :P
 # normal code inline [maybe that can raise if it errs, maybe more]
 # check python's --what they got?
 # use rspec, how can it improve?
 # todo better params
+
 if ARGV[0] == '--help'
   print "
   use: doctest file_name.rb (or directory_name): default '.'
@@ -25,8 +27,9 @@ end
 BINDING = binding()
 
 class DocTest
-  CODE_REGEX = Regexp.new(/(>>|irb.*?>) (.*)/)
-  RESULT_REGEX = Regexp.new(/=> (.*)/)
+  CODE_REGEX = Regexp.new(/^(>>|irb.*?>) (.*)/)
+  RESULT_REGEX = Regexp.new(/^=> (.*)/)
+  EXCEPTION_REGEX = Regexp.new(/^([A-Z][A-Za-z0-9]*):/)
 
   def get_ruby_files(dir_name)
     ruby_file_names = []
@@ -49,8 +52,8 @@ class DocTest
 #doctest normalize substring
 >> a = DocTest.new
 => #<DocTest:0x37012c>
->> a.normalize_result('0xtion:0x1876bc0 @p')
-=> "0xtion:0xXXXXXXXX @p"
+>> a.normalize_result('0xtion:0x1876bc0 @@p')
+=> "0xtion:0xXXXXXXXX @@p"
 =end
   def normalize_result(input)
     input.gsub(/:0x([a-f0-9]){5,8}/, ':0xXXXXXXXX')  # makes them all 8 digits long
@@ -73,17 +76,29 @@ now test with different ordered hashes
 >> {1=>":0x123456", 2=>2, 3=> 3, 4=>4,5=>5}
 => {4=>4, 1=>":0x123456", 2=>2, 3=>3, 5=>5}
 =end
-require 'rubygems'; require 'ruby-debug';
+   def dbg
+     require 'rubygems'; require 'ruby-debug'; debugger
+  end
   def run_doc_tests(doc_test)
     statement, report = '', ''
     wrong, passed = 0, 0
     doc_test.split("\n").each do |line|
       case line
         when CODE_REGEX
-        statement << CODE_REGEX.match(line)[2]
-        when RESULT_REGEX
-          expected_result_string = normalize_result(RESULT_REGEX.match(line)[1])
-          result_we_got = eval(statement, BINDING)
+          statement << CODE_REGEX.match(line)[2]
+        when RESULT_REGEX, EXCEPTION_REGEX
+          if line =~ RESULT_REGEX
+		expected_result_string = normalize_result(RESULT_REGEX.match(line)[1])
+	  else
+		raise unless line =~ EXCEPTION_REGEX
+		expected_result_string = $1
+	  end
+	
+          begin
+		result_we_got = eval(statement, BINDING)
+	  rescue Exception => e
+		result_we_got = e.class
+          end
        
           they_match = false 
           if result_we_got.class.ancestors.include? Hash
@@ -113,8 +128,8 @@ require 'rubygems'; require 'ruby-debug';
   def process_ruby_file(file_name)
     tests, succeeded, failed = 0, 0, 0
     file_report = ''
-    code = File.read(file_name)
-  
+    code = File.read file_name
+
     startup_code_for_this_file = code.scan(/begin\s#setup_doctest once_per_file(.*?)=end/m)
   
     if startup_code_for_this_file.length > 0
@@ -135,7 +150,7 @@ require 'rubygems'; require 'ruby-debug';
       succeeded += passed
       failed += wrong
     end
-    file_report = "Processing '#{file_name}'" + file_report unless file_report.empty?
+    file_report = "Processing '#{file_name}' from current directory " + file_report unless file_report.empty?
     return tests, succeeded, failed, file_report
   end
 
@@ -166,3 +181,4 @@ if $0 == __FILE__
  total_report << "Total files: #{total_files}, total tests: #{total_tests}, assertions succeeded: #{total_succeeded}, assertions failed: #{total_failed}"
  puts total_report
 end
+
