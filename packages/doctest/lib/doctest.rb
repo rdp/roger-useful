@@ -1,0 +1,1 @@
+/Users/roger/dev/ruby-roger-useful-functions/doctest.rb
