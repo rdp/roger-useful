@@ -183,7 +183,7 @@ end
     multiples_style =  $6.blank? ? nil : $6.to_sym 
     condition = !$4.blank? ? $4.gsub(' ', '_').to_sym : :equals
     return column_name, sensitivity, condition, multiples_style
-  end
+  end # todo 'includes all subwords' with an array and regex :)
 end
 # todo within
 # todo is
@@ -191,11 +191,14 @@ end
 
 class ActiveRecord::Base
   class << self
+    def where_has_all_words name, words, regex = / /
+      return self.where name => words.split(regex)
+    end 
+
     def first options = {}
       return self.find :first, options
     end
-    alias :fw :find_where
-    alias :aw :all_where
+    alias :awhere :all_where
     alias :where :find_where
   end
 end

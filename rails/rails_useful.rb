@@ -1,4 +1,4 @@
-require File.dirname(__FILE__) + '/slice2.rb'
+require File.dirname(__FILE__) + '/slice3.rb'
 
 def dbg; require 'ruby-debug'; debugger; end
 if (ENV['RAILS_ENV'] == 'production' or ENV['RAILS_ENV'] == 'staging') and Socket.gethostname == "Rogers-little-PowerBook.local" # ruby does it itself otherwise, I think.  There may be a rails way to do this.
@@ -21,7 +21,15 @@ loop do
 	break if has_new
   end
  if has_new
-  system("kill -9 #{Process.pid}") # we are done
+   #   file === app/controllers/flexpro_controller.rb
+  if file[-3..-1] =='.rb'
+    filename_only = File.basename(file)[0..-4]
+    constant_name = filename_only.camelize.constantize
+    Object.send(:remove_const, filename_only.camelize) # wants only the string--hangs on object :)
+    load file # reload it
+  end
+   
+  #system("kill -9 #{Process.pid}") # we are done
   latest_inserted = Time.now
  end
  sleep 0.2
