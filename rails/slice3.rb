@@ -1,4 +1,5 @@
 # Alters ActiveRecord's condition handling to allow conditions specified as a hash and English!
+# ltodo: allow where id
 # allow for names themselves with/without underscores [does this work?] TOTEST
 # name doesnt include needs help TOTEST
 # of predicates, e.g:
@@ -25,9 +26,7 @@
 # negatives works, too :doesnt_contain => ['ghi', 'jkl'] ==> NOT contains 'ghi' and NOT contains 'jkl'
 
 # todo negation abilities  TOTEST
-# todo add !=, =, ==, <, >, <= 
-# todo -- do I allow for retardedness supersets? TOTEST
-# todo allow for 'sensitive' and space after TOTEST
+# could do: 'closest match' as a whole new function
 =begin
 #setup_doctest once_per_file
 require 'test.slice3.rb'
@@ -140,7 +139,7 @@ RuntimeError: unsupported style for _all, as it would seem exclusive so to not m
    if negativity
 	negativity_contribution = 'NOT '
    end
-    
+   condition ||= :equals 
     fragment = case condition
       when :greater_than then ["> ?", argument]
       when :less_than then ["< ?", argument]
@@ -149,7 +148,9 @@ RuntimeError: unsupported style for _all, as it would seem exclusive so to not m
       when :begins_with then ["LIKE ?", "#{argument}%"]
       when :ends_with then ["LIKE ?", "%#{argument}"]
       when :contains then ["LIKE ?", "%#{argument}%"]
-      when :matches then ["REGEXP ?", argument.gsub(')', '\\)').gsub(')', '\\)')]# TODO sanitize better
+      when :matches then 
+	argument = argument.inspect[1..-2] if argument.class == Regexp
+	["REGEXP ?", argument.gsub(')', '\\)').gsub(')', '\\)')]# TODO sanitize better
       when :equals then [attribute_condition(argument), argument] # ignores work with nil (!) TOTEST
       else raise 'unknown condition' + condition.to_s
     end
