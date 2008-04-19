@@ -1,5 +1,7 @@
 # Alters ActiveRecord's condition handling to allow conditions specified as a hash and English!
-# ltodo: allow where id
+# ltodo: allow where id as number or string
+# Note: this project was heavily inspired by django's query syntax
+# and took its codebase from the slice_and_dice project [then made it work with english and multiples] 
 # allow for names themselves with/without underscores [does this work?] TOTEST
 # name doesnt include needs help TOTEST
 # of predicates, e.g:

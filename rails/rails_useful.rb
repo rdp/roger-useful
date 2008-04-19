@@ -1,4 +1,4 @@
-#require File.dirname(__FILE__) + '/slice3.rb'
+require File.dirname(__FILE__) + '/english_like_queries.rb'
 
 def dbg; require 'ruby-debug'; debugger; end
 if (ENV['RAILS_ENV'] == 'production' or ENV['RAILS_ENV'] == 'staging') and Socket.gethostname == "Rogers-little-PowerBook.local" # ruby does it itself otherwise, I think.  There may be a rails way to do this.
