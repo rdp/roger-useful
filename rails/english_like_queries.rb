@@ -1,7 +1,8 @@
+# all we need are some TOTESTS then she's ready 
+
 # Alters ActiveRecord's condition handling to allow conditions specified as a hash and English!
-# ltodo: allow where id as number or string
 # Note: this project was heavily inspired by django's query syntax
-# and took its codebase from the slice_and_dice project [then made it work with english and multiples] 
+# and took its codebase from the slice_and_dice project [then made it work with more english and multiples, etc.] 
 # allow for names themselves with/without underscores [does this work?] TOTEST
 # name doesnt include needs help TOTEST
 # of predicates, e.g:
@@ -26,9 +27,12 @@
 # to use and add _all to the end
 # :contains_all => ['abc', 'def'] ==> contains 'abc' AND contains 'def'
 # negatives works, too :doesnt_contain => ['ghi', 'jkl'] ==> NOT contains 'ghi' and NOT contains 'jkl'
+# todo does doesnt_start_with_all work? it should err, I think TOTEST
+# ltodo: accept sub ranges, like 'id in' => [100..101, 32, 1000..34]
+# ltodo: allow where id as number or string, and 'where' defaulting to first, 'awhere' to just plain all
+# ltodo use strings only
 
-# todo negation abilities  TOTEST
-# could do: 'closest match' as a whole new function
+# ltodo negation abilities  TOTEST
 =begin
 #setup_doctest once_per_file
 require 'test.slice3.rb'
@@ -79,7 +83,8 @@ RuntimeError: unsupported style for _all, as it would seem exclusive so to not m
 # ltodo rename
   def self.hash_to_conditions_string(hash)
     hash.keys.collect{|key| 
-      if hash[key].class == Array
+      if hash[key].class == Array or hash[key].class == Range
+	hash[key] = hash[key].to_a if hash[key].class == Range
         attribute, negativity, is_case_sensitive, condition, optional_multiples_style = split_attribute_and_condition(key) # grab the multiples style
 	condition ||= :equals
   # so our options are
@@ -116,7 +121,6 @@ RuntimeError: unsupported style for _all, as it would seem exclusive so to not m
       end
     }.join(" AND ")
   end
-  # todo: allow for it to come in as a string or a symbol
   # could do: make it work with :conditions => {} ??
 
   # ltodo some day nested hashes [?]
@@ -162,8 +166,11 @@ RuntimeError: unsupported style for _all, as it would seem exclusive so to not m
     "#{negativity_contribution}#{case_sensitive_addition} #{table_name}.#{connection.quote_column_name(attribute)} #{sanitize_sql(fragment)}"
   end
 
+ # ltodo: add :either_or => true -- if I ever use it or someone does :)
+ # and even could add :or_with_conditions => true -- if anyone uses it
+
   # TODO does it actually work with pre-existing conditions?
-  def self.where conditions, options = {} # I guess the original author overcame this by just sanitizing sql on its way down or something (?) this need help TODO decide on scope of this :)
+  def self.fwhere conditions, options = {} # I guess the original author overcame this by just sanitizing sql on its way down or something (?) this need help TODO decide on scope of this :) -- :conditions => hash, too?  I guess :)
     if options[:conditions] and options[:conditions].class == Hash
 	size = conditions.length
 	conditions.merge! options[:conditions]
@@ -176,13 +183,13 @@ RuntimeError: unsupported style for _all, as it would seem exclusive so to not m
     else
       options[:conditions] = new_conditions
     end
-    options[:limit] ||= 2
+    options[:limit] ||= 2 # todo could add a warn option, if this were missed sorely...
     all = self.find :all, options
     print "MORE THAN ONE EXISTED!" if all.length > 1
     all[0]
   end
   
-  def self.awhere conditions, options = {}
+  def self.where conditions, options = {}
     new_conditions = self.hash_to_conditions_string(conditions)
     options[:conditions] ||= ''
     options[:conditions] = ' ' << new_conditions
@@ -239,7 +246,6 @@ RuntimeError: unsupported style for _all, as it would seem exclusive so to not m
     # also allows for an s prefix, i.e. _sstarts_with => 'ABC'  TOTEST
     # TODO allow for anything to have 'not' at the beginning (?) or doesnt? -- not yet TOTEST
     # ltodo could have 'matches case insensitive' =>
-    # todo have an opening ! ok '!includes' =>
     # ltodo less than stuffs -- does equal to or something fit?
     column_name = key.to_s.sub(/(| |__|_)(|i|insensitive|case[ _]insensitive)(| |_)(?:is||is[ _]included)(?:| |_)(|doesnt|does[ _]not|not|not|!)(|_| )(|gt|greater[_ ]than|less[ _]than|lt|equals?|equal to|lte|gte|starts[ _]with|begins[ _]with|ends?[ _]with|end[ _]with|contains?|includes?|included|matches|match|matchs|=|==|=>|<|<=|>|>=)(|_| )(|any|all|in|within)(|\?)(| )$/, "")
     # TEST is included, is included in
@@ -270,4 +276,3 @@ RuntimeError: unsupported style for _all, as it would seem exclusive so to not m
     return column_name, negativity, insensitivity, condition, multiples_style
   end
 end
-# todo does doesnt_start_with_all work? it should err, I think TOTEST
