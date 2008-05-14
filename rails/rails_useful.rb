@@ -2,6 +2,8 @@
 # ltodo: patch here
 # ltodo: track each file and its time, case two are updated simultaneously
 # ltodo: restart whole thing on certain files changing
+# ltodo: reload multiple changed files
+
 def dbg; require 'ruby-debug'; debugger; end
 class Object
  def e &block
@@ -16,11 +18,21 @@ if (ENV['RAILS_ENV'] == 'production' or ENV['RAILS_ENV'] == 'staging') and Socke
 watcher_thread = Thread.new{
 print 'STARTING WATCHER'
 latest_inserted = Time.now
-dirs = ['app/controllers', 'app/schools', 'app/models', 'vendor/plugins/substruct', 'app/helpers']
+reload_dirs = ['app/controllers', 'app/schools', 'app/models']
+death_dirs = ['app/helpers', 'config']
 loop do
- has_new = false
+ for dir in death_dirs do
+	for file in (Dir.glob dir + '/*') + (Dir.glob dir + '/*/*')
+		time = File.ctime file
+		if time > latest_inserted
+			print 'got new' , file, "\n KILLING\n"
+  			system("kill -9 #{Process.pid}") # we are done
+		end
+	end
+ end
 
- for dir in dirs
+ has_new = false
+ for dir in reload_dirs
 	for file in (Dir.glob dir + '/*') + (Dir.glob dir + '/*/*')
   
 		time = File.ctime file
@@ -46,11 +58,11 @@ loop do
 	    load file 
     rescue Exception => e
 	    pp 'ack got load error! app currently in unstable state!' + e.to_s, e.backtrace
+            system("kill -9 #{Process.pid}") # we are done
     end
     print "successfully reloaded\n"
   end
    
-  #system("kill -9 #{Process.pid}") # we are done
   latest_inserted = Time.now
  end
  sleep 0.2

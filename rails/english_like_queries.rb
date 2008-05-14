@@ -170,7 +170,7 @@ RuntimeError: unsupported style for _all, as it would seem exclusive so to not m
  # and even could add :or_with_conditions => true -- if anyone uses it
 
   # TODO does it actually work with pre-existing conditions?
-  def self.fwhere conditions, options = {} # I guess the original author overcame this by just sanitizing sql on its way down or something (?) this need help TODO decide on scope of this :) -- :conditions => hash, too?  I guess :)
+  def self.first_where conditions, options = {} # I guess the original author overcame this by just sanitizing sql on its way down or something (?) this need help TODO decide on scope of this :) -- :conditions => hash, too?  I guess :)
     if options[:conditions] and options[:conditions].class == Hash
 	size = conditions.length
 	conditions.merge! options[:conditions]
@@ -183,13 +183,10 @@ RuntimeError: unsupported style for _all, as it would seem exclusive so to not m
     else
       options[:conditions] = new_conditions
     end
-    options[:limit] ||= 2 # todo could add a warn option, if this were missed sorely...
-    all = self.find :all, options
-    print "MORE THAN ONE EXISTED!" if all.length > 1
-    all[0]
+    self.find :first, options
   end
   
-  def self.where conditions, options = {}
+  def self.all_where conditions, options = {}
     new_conditions = self.hash_to_conditions_string(conditions)
     options[:conditions] ||= ''
     options[:conditions] = ' ' << new_conditions
@@ -247,9 +244,9 @@ RuntimeError: unsupported style for _all, as it would seem exclusive so to not m
     # TODO allow for anything to have 'not' at the beginning (?) or doesnt? -- not yet TOTEST
     # ltodo could have 'matches case insensitive' =>
     # ltodo less than stuffs -- does equal to or something fit?
-    column_name = key.to_s.sub(/(| |__|_)(|i|insensitive|case[ _]insensitive)(| |_)(?:is||is[ _]included)(?:| |_)(|doesnt|does[ _]not|not|not|!)(|_| )(|gt|greater[_ ]than|less[ _]than|lt|equals?|equal to|lte|gte|starts[ _]with|begins[ _]with|ends?[ _]with|end[ _]with|contains?|includes?|included|matches|match|matchs|=|==|=>|<|<=|>|>=)(|_| )(|any|all|in|within)(|\?)(| )$/, "")
+    column_name = key.to_s.sub(/(| |__|_)(|i|insensitive|case[ _]insensitive)(| |_)(?:is||is[ _]included)(?:| |_)(|doesnt|does[ _]not|not|not|!)(|_| )(|gt|greater[_ ]than|less[ _]than|lt|equals?|equal to|lte|gte|starts[ _]with|begins[ _]with|ends?[ _]with|end[ _]with|contains?|includes?|incudes|included|matches|match|matchs|=|==|=>|<|<=|>|>=)(|_| )(|any|all|in|within)(|\?)(| )$/, "")
     # TEST is included, is included in
-#dbg
+    
     # found within
     insensitivity = $2
     negativity = $4
@@ -265,13 +262,11 @@ RuntimeError: unsupported style for _all, as it would seem exclusive so to not m
     # ltodo fix included is included in
     # seems to be a difference between first name is included in => ['bob, 'fred'] and first name include
     # should be able to ignore spaces after this point
-    normalize = {:in => :any, :included => :contains, :include => :contains, :includes => :contains, :case_insensitive => :insensitive, :lt => :less_than, :"<="  => :lte, :equal => :equals, :contain => :contains, :match => :matches, :matchs => :matches, :"!" => :not, :doesnt => :not, :does_not => :not, :"=" => :equals, :"==" => :equals, :"=>" => :equals, :within => :any, :i => :insensitive, :is_not => :not, :end_with => :ends_with, :"<" => :less_than, :"<=" => :lte, :">" => :greater_than, :">=" => :gte, :gt => :greater_than, :starts_with => :begins_with}
-    #pp 'thus far', insensitivity, negativity, condition, multiples_style
+    normalize = {:in => :any, :included => :contains, :include => :contains, :includes => :contains, :case_insensitive => :insensitive, :lt => :less_than, :"<="  => :lte, :equal => :equals, :contain => :contains, :match => :matches, :matchs => :matches, :"!" => :not, :doesnt => :not, :does_not => :not, :"=" => :equals, :"==" => :equals, :"=>" => :equals, :within => :any, :i => :insensitive, :is_not => :not, :end_with => :ends_with, :"<" => :less_than, :"<=" => :lte, :">" => :greater_than, :">=" => :gte, :gt => :greater_than, :starts_with => :begins_with, :incudes => :contains}
     insensitivity = normalize[insensitivity] if normalize[insensitivity]
     negativity = normalize[negativity] if normalize[negativity]
     condition = normalize[condition] if normalize[condition]
     multiples_style = normalize[multiples_style] if normalize[multiples_style]
-    #pp 'now have', insensitivity, negativity, condition, multiples_style
 
     return column_name, negativity, insensitivity, condition, multiples_style
   end
