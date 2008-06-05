@@ -84,6 +84,14 @@ RuntimeError: unsupported style for _all, as it would seem exclusive so to not m
   def self.hash_to_conditions_string(hash)
     hash.keys.collect{|key| 
       if hash[key].class == Array or hash[key].class == Range
+	# allow things like 'id in' => [[0,9], 8]
+	# 'id in' => [0..10, [8]]
+	if hash[key].class == Array
+		hash[key].flatten!
+		hash[key] = hash[key].map{|sub_entry| sub_entry.to_a} # spread out those ranges TOTEST
+		hash[key].flatten!
+	end
+      
 	hash[key] = hash[key].to_a if hash[key].class == Range
         attribute, negativity, is_case_sensitive, condition, optional_multiples_style = split_attribute_and_condition(key) # grab the multiples style
 	condition ||= :equals
@@ -170,7 +178,8 @@ RuntimeError: unsupported style for _all, as it would seem exclusive so to not m
  # and even could add :or_with_conditions => true -- if anyone uses it
 
   # TODO does it actually work with pre-existing conditions?
-  def self.first_where conditions, options = {} # I guess the original author overcame this by just sanitizing sql on its way down or something (?) this need help TODO decide on scope of this :) -- :conditions => hash, too?  I guess :)
+# TODO account for if pre-existing conditions um...are "" when pre_existing.strip
+  def self.where conditions, options = {} # I guess the original author overcame this by just sanitizing sql on its way down or something (?) this need help TODO decide on scope of this :) -- :conditions => hash, too?  I guess :)
     if options[:conditions] and options[:conditions].class == Hash
 	size = conditions.length
 	conditions.merge! options[:conditions]
@@ -183,9 +192,12 @@ RuntimeError: unsupported style for _all, as it would seem exclusive so to not m
     else
       options[:conditions] = new_conditions
     end
-    self.find :first, options
+
+    self.find :first, options 
   end
-  
+
+  # TODO be able to join with 'name =>' => 'fred', 'or date is <' => Time.now.today
+  # TODO maybe even 'either name =' => 'fred', 'or name =' => 'george' hmm.  kind of verbose :)
   def self.all_where conditions, options = {}
     new_conditions = self.hash_to_conditions_string(conditions)
     options[:conditions] ||= ''
@@ -244,7 +256,7 @@ RuntimeError: unsupported style for _all, as it would seem exclusive so to not m
     # TODO allow for anything to have 'not' at the beginning (?) or doesnt? -- not yet TOTEST
     # ltodo could have 'matches case insensitive' =>
     # ltodo less than stuffs -- does equal to or something fit?
-    column_name = key.to_s.sub(/(| |__|_)(|i|insensitive|case[ _]insensitive)(| |_)(?:is||is[ _]included)(?:| |_)(|doesnt|does[ _]not|not|not|!)(|_| )(|gt|greater[_ ]than|less[ _]than|lt|equals?|equal to|lte|gte|starts[ _]with|begins[ _]with|ends?[ _]with|end[ _]with|contains?|includes?|incudes|included|matches|match|matchs|=|==|=>|<|<=|>|>=)(|_| )(|any|all|in|within)(|\?)(| )$/, "")
+    column_name = key.to_s.sub(/(| |__|_)(|i|insensitive|case[ _]insensitive)(| |_)(?:is||is[ _]included)(?:| |_)(|doesnt|does[ _]not|not|not|!)(|_| )(|gt|greater[_ ]than|less[ _]than|lt|equals?|equal to|lte|gte|starts?|starts[ _]with|begins[ _]with|ends?[ _]with|end[ _]with|contains?|includes?|incudes|included|matches|match|matchs|=|==|=>|<|<=|>|>=)(|_| )(|any|all|in|within)(|\?)(| )$/, "")
     # TEST is included, is included in
     
     # found within
@@ -262,7 +274,7 @@ RuntimeError: unsupported style for _all, as it would seem exclusive so to not m
     # ltodo fix included is included in
     # seems to be a difference between first name is included in => ['bob, 'fred'] and first name include
     # should be able to ignore spaces after this point
-    normalize = {:in => :any, :included => :contains, :include => :contains, :includes => :contains, :case_insensitive => :insensitive, :lt => :less_than, :"<="  => :lte, :equal => :equals, :contain => :contains, :match => :matches, :matchs => :matches, :"!" => :not, :doesnt => :not, :does_not => :not, :"=" => :equals, :"==" => :equals, :"=>" => :equals, :within => :any, :i => :insensitive, :is_not => :not, :end_with => :ends_with, :"<" => :less_than, :"<=" => :lte, :">" => :greater_than, :">=" => :gte, :gt => :greater_than, :starts_with => :begins_with, :incudes => :contains}
+    normalize = {:in => :any, :included => :contains, :include => :contains, :includes => :contains, :case_insensitive => :insensitive, :lt => :less_than, :"<="  => :lte, :equal => :equals, :contain => :contains, :match => :matches, :matchs => :matches, :"!" => :not, :doesnt => :not, :does_not => :not, :"=" => :equals, :"==" => :equals, :"=>" => :equals, :within => :any, :i => :insensitive, :is_not => :not, :end_with => :ends_with, :"<" => :less_than, :"<=" => :lte, :">" => :greater_than, :">=" => :gte, :gt => :greater_than, :starts_with => :begins_with, :incudes => :contains, :starts => :begins_with, :start => :begins_with}
     insensitivity = normalize[insensitivity] if normalize[insensitivity]
     negativity = normalize[negativity] if normalize[negativity]
     condition = normalize[condition] if normalize[condition]
