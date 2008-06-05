@@ -1,5 +1,7 @@
 # all we need are some TOTESTS then she's ready 
+# see the wiki for examples
 
+# http://code.google.com/p/ruby-roger-useful-functions/wiki/EnglishLikeQueries
 # Alters ActiveRecord's condition handling to allow conditions specified as a hash and English!
 # Note: this project was heavily inspired by django's query syntax
 # and took its codebase from the slice_and_dice project [then made it work with more english and multiples, etc.] 
@@ -7,19 +9,11 @@
 # name doesnt include needs help TOTEST
 # of predicates, e.g:
 #
-#   User.find :first, :conditions => {:name => 'Tom'}
-#   Task.find :all, :conditions => {:owner_id => 12}
-#
-# In addition to these simple equality conditions, other more complex conditions
-# can be specified without recourse to SQL:
-#
-#   User.where {'post_count_gt' => 20}
-#   Task.find :all, :conditions => {:description_contains => 'london'}
-#
 # As well as finder methods, this condition syntax also works with scoping,
 # calculations and other areas where normal active record conditions
 # can be used
-# note that we can't use it with 'normal' :conditions => this, at least currently
+# TODO allow it to work with normal conditions..? sure :)
+# TODO merge with coiso
 # note you can optionally _all (i.e. :doesnt_contain_all => ['abc','def'])
 # note you can optionally have a final suffix ? (i.e. :contains? => 'abc')
 # note that if you pass it an array, it defaults to 'OR'
@@ -29,9 +23,8 @@
 # negatives works, too :doesnt_contain => ['ghi', 'jkl'] ==> NOT contains 'ghi' and NOT contains 'jkl'
 # todo does doesnt_start_with_all work? it should err, I think TOTEST
 # ltodo: accept sub ranges, like 'id in' => [100..101, 32, 1000..34]
-# ltodo: allow where id as number or string, and 'where' defaulting to first, 'awhere' to just plain all
+# ltodo: allow where id as number or string ex: User.find 43
 # ltodo use strings only
-
 # ltodo negation abilities  TOTEST
 =begin
 #setup_doctest once_per_file
