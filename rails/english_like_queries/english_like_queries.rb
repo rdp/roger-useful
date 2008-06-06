@@ -1,7 +1,9 @@
 # all we need are some TOTESTS then she's ready 
 # see the wiki for examples
 
+# todo Program.where 98..990
 # http://code.google.com/p/ruby-roger-useful-functions/wiki/EnglishLikeQueries
+# note: todos about changing the grammar:  I'd say put them off until they're called for :)
 # Alters ActiveRecord's condition handling to allow conditions specified as a hash and English!
 # Note: this project was heavily inspired by django's query syntax
 # and took its codebase from the slice_and_dice project [then made it work with more english and multiples, etc.] 
@@ -26,6 +28,8 @@
 # ltodo: allow where id as number or string ex: User.find 43
 # ltodo use strings only
 # ltodo negation abilities  TOTEST
+# todo: if you do .all_where 1900..20000 it generates a lot of extra, unneeded sql
+# also is there a 'within' function?  or some way of handling ranges that would rock, sql wise?
 =begin
 #setup_doctest once_per_file
 require 'test.slice3.rb'
@@ -81,7 +85,15 @@ RuntimeError: unsupported style for _all, as it would seem exclusive so to not m
 	# 'id in' => [0..10, [8]]
 	if hash[key].class == Array
 		hash[key].flatten!
-		hash[key] = hash[key].map{|sub_entry| sub_entry.to_a} # spread out those ranges TOTEST
+		hash[key] = hash[key].map{|sub_entry| 
+			if sub_entry.class == Array
+				sub_entry
+			else
+				array_version = sub_entry.to_a
+				raise 'unable to convert to array' + sub_entry.to_s unless array and array.length > 0
+				array_version
+			end
+			} # spread out those ranges TOTEST
 		hash[key].flatten!
 	end
       
@@ -173,6 +185,19 @@ RuntimeError: unsupported style for _all, as it would seem exclusive so to not m
   # TODO does it actually work with pre-existing conditions?
 # TODO account for if pre-existing conditions um...are "" when pre_existing.strip
   def self.where conditions, options = {} # I guess the original author overcame this by just sanitizing sql on its way down or something (?) this need help TODO decide on scope of this :) -- :conditions => hash, too?  I guess :)
+
+    if conditions.class != Hash
+        # case of A.where 33..35 or A.where 33 or A.where '33'
+        # I guess in reality we could short circuit and just use .find here, for some cases, but this works just as well, with less overall code :)
+	# note also that we don't allow  TODO .where :first and .where :last, at least not yet
+	# nor .where [no params]. ltodo
+	if [:last, :first].include? conditions # TODO doc
+		return self.find conditions
+        else
+        	conditions = {'id' => conditions}
+	end
+    end
+
     if options[:conditions] and options[:conditions].class == Hash
 	size = conditions.length
 	conditions.merge! options[:conditions]
@@ -192,6 +217,13 @@ RuntimeError: unsupported style for _all, as it would seem exclusive so to not m
   # TODO be able to join with 'name =>' => 'fred', 'or date is <' => Time.now.today
   # TODO maybe even 'either name =' => 'fred', 'or name =' => 'george' hmm.  kind of verbose :)
   def self.all_where conditions, options = {}
+    unless conditions.class == Hash # allow for A.all_where 3839..3940 or A.all_where 39
+   	if conditions == :all
+		return self.find :all, options # TOTEST
+	else
+	 	conditions = {:id => conditions}
+	end
+    end
     new_conditions = self.hash_to_conditions_string(conditions)
     options[:conditions] ||= ''
     options[:conditions] = ' ' << new_conditions
