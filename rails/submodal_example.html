@@ -20,3 +20,27 @@ in my view
 				 :complete => "show_cart_modal.open();",
 				:failure => 'alert("That item appears to have gone out of stock before you were able to add it to your cart.\n\nPlease refresh this page.")'	}
 		%>
+
+
+
+
+
+# here's a form example:
+
+I put this at the top
+
+        <div style="display:none;">
+                        <a href="/store/show_cart/" id="cart_link"></a>
+                <script>
+                        var show_cart_modal = new Control.Modal('cart_link',{
+                                iframe: true,
+                                width: 700,
+                                height: 380,
+                                fade: true
+                        });
+                </script>
+        </div>
+
+		<form action="/store/add_to_cart_ajax/1209671929" method="post" onsubmit="show_cart_modal.open();">
+<input type="button">
+</form>
