@@ -1,0 +1,22 @@
+I put this at the top 
+
+	<div style="display:none;">
+			<a href="/store/show_cart/" id="cart_link"></a>
+		<script>
+			var show_cart_modal = new Control.Modal('cart_link',{
+				iframe: true,
+				width: 700,
+				height: 380,
+				fade: true
+			});
+		</script>
+	</div>
+
+
+then
+in my view
+		<%=  link_to_remote 'Add To Cart',
+				{ :url => {:controller=>'store', :action=>'add_to_cart_ajax', :id => @product.id},
+				 :complete => "show_cart_modal.open();",
+				:failure => 'alert("That item appears to have gone out of stock before you were able to add it to your cart.\n\nPlease refresh this page.")'	}
+		%>

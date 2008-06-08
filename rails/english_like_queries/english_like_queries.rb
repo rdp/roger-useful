@@ -1,6 +1,6 @@
 # all we need are some TOTESTS then she's ready 
 # see the wiki for examples
-
+# TODO P.all_where 'id in' => [2193, 2194] # and also figure out what 'id' => [2193, 2194] should do...anything
 # todo Program.where 98..990
 # http://code.google.com/p/ruby-roger-useful-functions/wiki/EnglishLikeQueries
 # note: todos about changing the grammar:  I'd say put them off until they're called for :)
