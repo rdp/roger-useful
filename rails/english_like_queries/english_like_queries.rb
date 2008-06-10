@@ -1,3 +1,5 @@
+# bug: >> para = StudyArea.where 'name matches' => /para.*legal/i
+
 # all we need are some TOTESTS then she's ready 
 # see the wiki for examples
 # TODO P.all_where 'id in' => [2193, 2194] # and also figure out what 'id' => [2193, 2194] should do...anything
@@ -90,7 +92,7 @@ RuntimeError: unsupported style for _all, as it would seem exclusive so to not m
 				sub_entry
 			else
 				array_version = sub_entry.to_a
-				raise 'unable to convert to array' + sub_entry.to_s unless array and array.length > 0
+				raise 'unable to convert to array' + sub_entry.to_s unless array_version and array_version.length > 0
 				array_version
 			end
 			} # spread out those ranges TOTEST
@@ -192,7 +194,7 @@ RuntimeError: unsupported style for _all, as it would seem exclusive so to not m
 	# note also that we don't allow  TODO .where :first and .where :last, at least not yet
 	# nor .where [no params]. ltodo
 	if [:last, :first].include? conditions # TODO doc
-		return self.find conditions
+		return self.find(conditions)
         else
         	conditions = {'id' => conditions}
 	end
@@ -219,7 +221,7 @@ RuntimeError: unsupported style for _all, as it would seem exclusive so to not m
   def self.all_where conditions, options = {}
     unless conditions.class == Hash # allow for A.all_where 3839..3940 or A.all_where 39
    	if conditions == :all
-		return self.find :all, options # TOTEST
+		return self.find(:all, options)# TOTEST
 	else
 	 	conditions = {:id => conditions}
 	end
