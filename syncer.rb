@@ -1,4 +1,7 @@
-#!/Users/roger/ppc_local/bin/ruby -w
+#!/usr/bin/env ruby
+# one BIG transaction, so that ctrl+c will work.
+# by default output a 'backup' log somewhere, too! oh baby! 10 of them! what the heck! :)
+# just needs docs and rock and roll :)
 # this program syncs between two database tables to make a recipient match a donor table
 # so the question still remains--does navicat maintain 'id' integrity on inserts?  Should we?
 # note this lacks 'transaction's thus far
@@ -7,28 +10,45 @@
 # TODO could use a 'mass insert' to speed things up (one giant giant string), or...that rails plugin that does the same.  If that hurts then maybe some 'O(1) string' (if).
 # could do: something along the lines of rsync for database tables--calculate some checksums, foreign host, etc., anything to save on bandwidth lol. It is, however, true that most changes come from the "latter end" of tables so...probably has tons of potential savings
 # could do: download the next table while you're comparing the first muhaha
-# TODO handle ssh => ssh
+# TODO handle ssh => ssh [separate hosts]
 # could do: download from both people at the same time, per table, or what not muhaha
 # could do: some more free's in here
 # could do: at the beginning verify all tables exist on from, to databases, and all have the same structure
 # could do: at the end output 'just the summary' (and the to, from db's)
 # could do: timings per table
+# could do: batch mode insertions [optimize the multiple insert stuffs]
+# TODO transactions -- probably one per table
+# TODO when it does something require keyboard input unless they specify --force or something
+# TODO handle ginormous tables :) that don't ever ever fit in memory :)
+# could do: have this cool 'difference since then' setting thingers...like...ok you sync'ed that since then, that's you change, so you can just that.
+# whoa!
+# :)
+# ltodo: auto-start up that ssh locally, kill it when done [arbitrary port! yes!] or could use hash of name as port...
+# ltodo have an array of 'raise if you ever commit to these!' :)
 
   require 'optparse'
+  require 'rubygems'
+  require "mysql"
  
   # define some databases and how you connect with them, if foreign
-  mac = {:host => '127.0.0.1', :user => 'root', :password => '', :db => 'local_leadgen_dev', :ssh_host => nil}
-# define more here!
-  db_from_info = mac
-  db_to_info = production
+  mac = {:host => '127.0.0.1', :user => 'root', :password => '', :db => 'local_leadgen_dev'}
+  connection_to_prod = {:user => 'mysql_userlen', :password => 'mysql_pass', :ssh_host => 'some_url', :ssh_port => 3022, :ssh_user => 'rpack', :ssh_local_to_host => '127.0.0.1', :ssh_local_to_port => '4040'}
 
+  production = {:db => 'degreesearch_production'}.merge(connection_to_prod) # some db's found on the other end of that ssh connection -- we have them re-use the connection_to_prod
+  staging = {:db => 'degreesearch_staging'}.merge(connection_to_prod)
+  schools = {:db => 'degreesearch_schools'}.merge(connection_to_prod)
 
+  # setup defaultsi [these are the default]:
+  db_from_info = production
+  db_to_info = mac
   actually_run_queries = false
-  my_options = {}
   default_tables_to_sync_if_none_passed = ['programs']
-  tables_to_sync = []
   verbose = true # default
-  # make sure they used options
+ 
+ # parse options 
+  my_options = {}
+  tables_to_sync = []
+  # make sure they used options, or nothing :)
   raise 'poor parameter use -- expected first parameter to start with a -' if ARGV.length > 0  and ARGV[0][0..0] != '-'
   OptionParser.new do |opts|
     opts.banner = "Usage: #{__FILE__} [options]"
@@ -50,7 +70,7 @@
       end
     end
 
-    opts.on("-commit", "--commit", " tell us whether or not to actually run queries") do
+    opts.on("", "--commit", " tell us whether or not to actually run queries") do
       print "DOING IT COMMITTING LIVE QUERIES\n"
       actually_run_queries = true
     end
@@ -59,15 +79,17 @@
       print "extra sql", sql
       my_options[:extra_sql] = sql
     end
+
+    opts.on('-q', '--quiet', 'Non-verbose') do |quiet_true|
+	verbose = false
+    end
+
   end.parse!
 
   tables_to_sync = default_tables_to_sync_if_none_passed if tables_to_sync.empty? # allow for the defaults
   raise if db_to_info == production and actually_run_queries # I never wanted to commit to one db
   raise unless db_from_info and db_to_info
-  raise if actually_run_queries and db_to_info == production
 
-  require 'rubygems'
-  require "mysql"
 
 class Hash
 	def to_sql_update_query(table_name, nonmatching_keys) # ltodo take some 'params' :)
@@ -100,36 +122,45 @@ end
    
 
    if db_from_info[:ssh_host]
-		db_from_info[:host] = '127.0.0.1'
+		db_from_info[:host] = db_from_info[:ssh_local_to_host] || '127.0.0.1'
 		db_from_info[:port] = 4000
    end
 
    if db_to_info[:ssh_host]
-		db_to_info[:host] = '127.0.0.1'
+		db_to_info[:host] = db_from_info[:ssh_local_to_host] || '127.0.0.1'
 		db_to_info[:port] = 4000
    end
-   print "\n#{db_from_info[:ssh_host] || db_from_info[:host]}:#{db_from_info[:db]} #{tables_to_sync.inspect}\n"
-   print "\t=> #{db_to_info[:ssh_host] || db_to_info[:host]}:#{db_to_info[:db]} #{tables_to_sync.inspect}\n"
-   
    commit_style = actually_run_queries ? '---COMMITTING----' : 'previewing (no changes made)'
-   print "#{commit_style} run"
+
+   print "#{db_from_info[:db]} => #{db_to_info[:db]}\n\n"
+   print "#{commit_style} run\n\n"
+   print "#{db_from_info[:ssh_host] || db_from_info[:host]}:#{db_from_info[:db]} #{tables_to_sync.inspect}\n"
+   print "\t=> #{db_to_info[:ssh_host] || db_to_info[:host]}:#{db_to_info[:db]} #{tables_to_sync.inspect}\n"
+   # ltodo add in the local_to_stuff here
+   
    start_time = Time.now 
    begin
-     # connect to the MySQL server
-     print 'connecting to to DB...', "\n"
+     # connect to the MySQL servers
+     print 'connecting to to DB...', db_to_info[:db]; STDOUT.flush
      db_to = Mysql.real_connect(db_to_info[:host], db_to_info[:user], db_to_info[:password], db_to_info[:db], db_to_info[:port], nil, Mysql::CLIENT_COMPRESS)
-     print 'connected to To DB, now connecting to from DB ', "\n"
+     print 'connected', "\n", 'now connecting to from DB ', db_from_info[:db]; STDOUT.flush
      db_from = Mysql.real_connect(db_from_info[:host], db_from_info[:user], db_from_info[:password], db_from_info[:db], db_from_info[:port], nil, Mysql::CLIENT_COMPRESS)
-     print "connected to From DB \n"
+     print "connected\n"
    rescue Mysql::Error => e
      puts "Error code: #{e.errno}"
      puts "Error message: #{e.error}"
      puts "This may mean a tunnel is not working" if e.error.include?('127.0.0.1')
      puts "Error SQLSTATE: #{e.sqlstate}" if e.respond_to?("sqlstate")
      print "Did you forget to start this ssh tunnel?"
+     # note that, if you do add ssh -> ssh, you may still only need one connection!
      if db_from_info[:ssh_host] or db_to_info[:ssh_host]
 		print "please run this in another screen:\n" # assumes that we only have one ssh host, in from. redo if this doesn't hold
-	print "ssh -L 4000:localhost:3306 #{db_from_info[:ssh_user] || db_to_info[:ssh_user]}@#{db_from_info[:ssh_host] || db_to_info[:ssh_host]} \n" # NOTE DOES NOT YET ALLOW FOR TWO SSH DB's
+	ssh_port = db_from_info[:ssh_port] || db_to_info[:ssh_port]
+	ssh_local_to_port = db_from_info[:ssh_local_to_port] || db_to_info[:ssh_local_to_port] || 3306
+	ssh_user = db_from_info[:ssh_user] || db_to_info[:ssh_user]
+	ssh_local_to_host = db_from_info[:ssh_local_to_host] || db_to_info[:ssh_local_to_host] || 'localhost'
+	ssh_host = db_from_info[:ssh_host] || db_to_info[:ssh_host]
+	print "ssh #{ssh_port ? '-p ' + ssh_port.to_s : nil} -L 4000:#{ssh_local_to_host}:#{ssh_local_to_port} #{ssh_user}@#{ssh_host} \n" # NOTE DOES NOT YET ALLOW FOR TWO SSH DB's
      end
      exit
    ensure
@@ -222,5 +253,5 @@ end
   end
   db_from.close if db_from
   db_to.close if db_to
-  print "summary:---------------------------#{commit_style}'ed\n", summary_information
-  print "total time #{Time.now - start_time}"
+  print summary_information
+  print "total transfer time #{Time.now - start_time}\n"
