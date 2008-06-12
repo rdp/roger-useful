@@ -9,9 +9,9 @@ parent_thread = Thread.current
      #dbh = Mysql.real_connect("localhost", "wilkboar_ties", "ties", "local_leadgen_dev")
      conns = []
      22.times { conns << Mysql.real_connect("localhost", "wilkboar_ties", "ties", "local_leadgen_dev") }
-     $outstanding = 15
+     $outstanding = 20
       
-     5.times {
+     10.times {
 	Thread.new(conns.shift) {|conn|
 	 res = conn.query "select count(*) from user_sessions"
 	 res.each_hash do |row|
