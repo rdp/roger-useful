@@ -1,6 +1,6 @@
 require 'rubygems'
 require 'eventmachine'
-require 'asymy'
+require 'source/asymy/asymy'
 require 'pp'
 
 class ConnectionPool
