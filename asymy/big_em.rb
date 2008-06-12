@@ -41,7 +41,7 @@ conns = []
 20.times {conns << Asymy::Connection.new(opts) } 
 outstanding = 0
 
-0.upto(19) do |i|
+0.upto(10) do |i|
    outstanding += 1
    conns[i].exec("select COUNT(*) from user_sessions") {|cols, rows| pp 'big', [i, rows.size]
 	outstanding -= 1
@@ -51,7 +51,7 @@ end
 
 # pool
 pool = ConnectionPool.new 10, opts
-1000.times { |i|
+10.times { |i|
   outstanding += 1
   pool.exec_when_available("select COUNT(*) from users") {|cols, rows|
         pp 'small', [i, rows.size]
