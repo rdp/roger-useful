@@ -50,28 +50,3 @@ parent_thread = Thread.current
      #dbh.close if dbh
    end
 
-=begin
-
-EventMachine::run {
-   opts = {:target => "localhost",
-                             :port => 3306,
-                             :username => "wilkboar_ties",
-                             :password => "ties",
-                             :database => "local_leadgen_dev"}
-
-conns = []
-22.times {conns << Asymy::Connection.new(opts) }
-
-0.upto(10) do |i|
-   conns[i].exec("select COUNT(*) from user_sessions") {|cols, rows| pp 'big', [i, rows.size]}
-end
-
-0.upto(10) do |i|
-   conns[10+i].exec("select COUNT(*) from users") {|cols, rows|
-pp 'small', [i, rows.size]}
-end
-
-}
-
-=end
-

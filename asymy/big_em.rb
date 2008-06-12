@@ -17,7 +17,7 @@ class ConnectionPool
 		conn.exec(query) {|*args|
                         block.call *args
 			@pool << conn
-                        check_if_can_run
+                        check_if_can_run # recursive, but it works
                 }
 	end
   end 
@@ -29,12 +29,14 @@ class ConnectionPool
 end
 
 EventMachine::run {
+
    opts = {:target => "localhost",
                              :port => 3306,
                              :username => "wilkboar_ties",
                              :password => "ties",
                              :database => "local_leadgen_dev"}
 
+# non pool
 conns = []
 20.times {conns << Asymy::Connection.new(opts) } 
 outstanding = 0
@@ -47,6 +49,7 @@ outstanding = 0
 	}
 end
 
+# pool
 pool = ConnectionPool.new 10, opts
 1000.times { |i|
   outstanding += 1
@@ -55,7 +58,7 @@ pool = ConnectionPool.new 10, opts
 	outstanding -= 1
 	EM.stop if outstanding == 0
 
-}
+  }
 }
 
 } # EM run
