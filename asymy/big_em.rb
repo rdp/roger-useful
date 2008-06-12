@@ -36,17 +36,26 @@ EventMachine::run {
                              :database => "local_leadgen_dev"}
 
 conns = []
-11.times {conns << Asymy::Connection.new(opts) } 
+20.times {conns << Asymy::Connection.new(opts) } 
+outstanding = 0
 
-pool = ConnectionPool.new 10, opts
-
-0.upto(10) do |i|
-   conns[i].exec("select COUNT(*) from user_sessions") {|cols, rows| pp 'big', [i, rows.size]}
+0.upto(19) do |i|
+   outstanding += 1
+   conns[i].exec("select COUNT(*) from user_sessions") {|cols, rows| pp 'big', [i, rows.size]
+	outstanding -= 1
+	EM.stop if outstanding == 0
+	}
 end
 
+pool = ConnectionPool.new 10, opts
 1000.times { |i|
+  outstanding += 1
   pool.exec_when_available("select COUNT(*) from users") {|cols, rows|
-     pp 'small', [i, rows.size]}
+        pp 'small', [i, rows.size]
+	outstanding -= 1
+	EM.stop if outstanding == 0
+
+}
 }
 
 } # EM run
