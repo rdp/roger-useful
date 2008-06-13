@@ -7,7 +7,8 @@
 #
 require 'rubygems'
 require 'swiftcore/evented_mongrel'
-require '../../source/asymy/asymy'
+require 'fibered_mongrel'
+require '../../source/asymy/asymy' # my version has an added exec_and_fiber_yield and an added em_connection to this class, which are necessary
 require '../setup_db_opts'
 
  class SimpleHandler < Mongrel::HttpHandler
@@ -31,7 +32,6 @@ require '../setup_db_opts'
            print "done #{my_count} #{size} #{n}\n"
 	}
 	conn.em_connection.close_connection
-
       end
     end
  end
