@@ -17,8 +17,9 @@ class ConnectionPool
 		conn.exec(query) {|*args|
                         block.call *args
 			@pool << conn
-                        check_if_can_run # recursive, but it works
+                        check_if_can_run # seems to work with a large pool--we'll call it good
                 }
+#		check_if_can_run # not sure if this is necessary ever or not...
 	end
   end 
 
