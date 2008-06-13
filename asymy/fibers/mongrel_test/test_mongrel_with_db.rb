@@ -1,3 +1,10 @@
+# This file shows mongrel doing db with fibers [multi-fibered]
+# to test:
+#  ab -n 10 -c 10 http://127.0.0.1:3000/
+#
+# note: requires patched evented_mongrel [currently]
+# and [local version of] asymy
+#
 require 'rubygems'
 require 'swiftcore/evented_mongrel'
 require '../../source/asymy/asymy'
