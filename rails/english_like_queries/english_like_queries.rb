@@ -2,7 +2,7 @@
 
 # all we need are some TOTESTS then she's ready 
 # see the wiki for examples
-# TODO P.all_where 'id in' => [2193, 2194] # and also figure out what 'id' => [2193, 2194] should do...anything
+# TODO P.where 'id in' => [2193, 2194] # and also figure out what 'id' => [2193, 2194] should do...anything
 # todo Program.where 98..990
 # http://code.google.com/p/ruby-roger-useful-functions/wiki/EnglishLikeQueries
 # note: todos about changing the grammar:  I'd say put them off until they're called for :)
@@ -91,7 +91,11 @@ RuntimeError: unsupported style for _all, as it would seem exclusive so to not m
 			if sub_entry.class == Array
 				sub_entry
 			else
-				array_version = sub_entry.to_a
+				if Numeric === sub_entry # this to avoid warnings of calling 5.to_a
+					array_version = Array(sub_entry)
+				else
+					array_version = sub_entry.to_a
+				end
 				raise 'unable to convert to array' + sub_entry.to_s unless array_version and array_version.length > 0
 				array_version
 			end
@@ -186,7 +190,7 @@ RuntimeError: unsupported style for _all, as it would seem exclusive so to not m
 
   # TODO does it actually work with pre-existing conditions?
 # TODO account for if pre-existing conditions um...are "" when pre_existing.strip
-  def self.where conditions, options = {} # I guess the original author overcame this by just sanitizing sql on its way down or something (?) this need help TODO decide on scope of this :) -- :conditions => hash, too?  I guess :)
+  def self.first_where conditions, options = {} # I guess the original author overcame this by just sanitizing sql on its way down or something (?) this need help TODO decide on scope of this :) -- :conditions => hash, too?  I guess :)
 
     if conditions.class != Hash
         # case of A.where 33..35 or A.where 33 or A.where '33'
@@ -207,7 +211,7 @@ RuntimeError: unsupported style for _all, as it would seem exclusive so to not m
     end
     new_conditions = self.hash_to_conditions_string(conditions)
     if options[:conditions]
-	raise 'weird conditions type' + options[:conditions].class.to_s = ' expected String'  unless options[:conditions].class == String
+	raise 'unanticipated conditions type' + options[:conditions].class.to_s = ' expected String'  unless options[:conditions].class == String
         options[:conditions] = "(#{options[:conditions]}) AND (new_conditions)"
     else
       options[:conditions] = new_conditions
@@ -218,7 +222,7 @@ RuntimeError: unsupported style for _all, as it would seem exclusive so to not m
 
   # TODO be able to join with 'name =>' => 'fred', 'or date is <' => Time.now.today
   # TODO maybe even 'either name =' => 'fred', 'or name =' => 'george' hmm.  kind of verbose :)
-  def self.all_where conditions, options = {}
+  def self.where conditions, options = {}
     unless conditions.class == Hash # allow for A.all_where 3839..3940 or A.all_where 39
    	if conditions == :all
 		return self.find(:all, options)# TOTEST
