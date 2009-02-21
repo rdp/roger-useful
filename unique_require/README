@@ -1,0 +1,24 @@
+unique_require helps you only require a file only once in Ruby 1.8.x
+
+background:
+
+If you've ever gotten a message like
+../smart_require/test.rb:1: warning: already initialized constant A
+
+
+you know that ruby 1.8.x "re-requires" a file if you pass in a different paths to the same file, like
+require 'test.rb'
+and
+require '../current_dir/test.rb'
+
+results in said file being loaded twice.
+
+Ruby 1.9 overcomes this.
+This file overcomes this for 1.8.x
+ex:
+
+c:\dev>ruby example_bad.rb
+../dev/test.rb:1: warning: already initialized constant A
+
+C:\dev\>ruby -runique_require example_bad.rb
+# no warning is displayed
