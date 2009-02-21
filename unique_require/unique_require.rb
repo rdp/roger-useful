@@ -1,6 +1,5 @@
-# smart require
+# unique require for ruby 1.8.x
 # see README
-
 require 'pathname'
 module Kernel
         alias :original_require :require
@@ -18,6 +17,7 @@ module Kernel
 end
 
 # doctest: it should require files only once
+# >> require 'pathname'
 # >> $a = 1
 # >> File.open('require_once.rb', 'w') do |f|; f.write '$a += 1'; end # write out a file that increments $a
 # >> require 'require_once.rb'

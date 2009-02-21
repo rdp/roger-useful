@@ -22,3 +22,8 @@ c:\dev>ruby example_bad.rb
 
 C:\dev\>ruby -runique_require example_bad.rb
 # no warning is displayed
+
+To use:
+download the unique_require.rb file in this directory.
+require it. 
+All comments welcome rogerdpack@gmail.com
