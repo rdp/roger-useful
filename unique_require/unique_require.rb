@@ -1,21 +1,28 @@
+require 'rubygems'
 # unique require for ruby 1.8.x
 # see README
+
+if RUBY_VERSION < "190"
+if(!defined?(Already_Loaded_Require_Unique))
+Already_Loaded_Require_Unique = true
 require 'pathname'
 module Kernel
-        alias :original_require :require
+        alias :require_non_uniqe :require
         def require *args
+		
                 filename = args[0]
-                for dir in ['.'] + $:
-                        for file in Dir.glob "#{dir}/#{filename}*"
-				if file =~ /#{filename}||.rb|.so|.bundle/
-				  return original_require(Pathname.new(file).realpath)
-				end
-                        end
-                end unless filename == 'pathname' # let that one pass, to avoid problems
-                original_require *args
+                for name in [filename, filename + '.rb', filename + '.so', filename + '.bundle'] do
+		  if File.exist?(name)
+	            full_path = Pathname.new(name).realpath
+		    return require_non_uniqe(full_path)
+                  end
+                end
+	        # now for library lookup it should be unique
+		return require_non_uniqe *args
         end
 end
-
+end
+end
 # doctest: it should require files only once
 # >> require 'pathname'
 # >> $a = 1
