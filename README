@@ -1,0 +1,4 @@
+A collection of [mostly rubyish] utilities.  See the different folders for more complete descriptions.
+
+unique_require: allow Ruby 1.8.x to only require a file once, regardless of the different path strings they pass to require a file.
+
