@@ -2,3 +2,5 @@ A collection of [mostly rubyish] utilities.  See the different folders for more 
 
 unique_require: allow Ruby 1.8.x to only require a file once, regardless of the different path strings they pass to require a file.
 
+micro_pause: a shoes app that pops up and reminds you to take carpal tunnel breaks.
+

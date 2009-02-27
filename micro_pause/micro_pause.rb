@@ -5,8 +5,10 @@
 # It pops up a breather during that time for 20s.
 # It's a freeware competitor to break reminder.
 # Built using Ruby's shoes toolkit.
+# 
 # MIT License (c) Roger Pack 2009
 #
+
 Shoes.app :height => 200, :width => 200 do
   para "Enter how many minutes before you'd like to take a micro pause?"
   a = edit_line do |e|
