@@ -7,14 +7,16 @@
 # Built using Ruby's shoes toolkit.
 # 
 # MIT License (c) Roger Pack 2009
-#
+# Looks like there's plenty of competition:
+# http://break.qarchive.org/
+# but probably not too much written for shoes
 
 Shoes.app :height => 200, :width => 200 do
   para "Enter how many minutes before you'd like to take a micro pause?"
-  a = edit_line do |e|
+  a = edit_line('3') do |e|
      @counter.text = e.text.to_i.to_s
   end
-  @counter = strong("0")
+  @counter = strong(a.text)
   b = para "every ", @counter, " minutes"
   button "select" do
     @@interval = a.text.to_f
