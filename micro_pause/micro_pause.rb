@@ -15,14 +15,15 @@ Shoes.app :height => 200, :width => 200 do
      @counter.text = e.text.to_i.to_s
   end
   @counter = strong("0")
-  para @counter, " minutes"
+  b = para "every ", @counter, " minutes"
   button "select" do
-    @@interval = a.text.to_i
+    @@interval = a.text.to_f
     Shoes.debug @@interval
-    timer(@@interval) do
+    timer(@@interval*60) do
       window :width => 1000, :height => 1000 do
         para "yo yo sleepy sleepy 20s!" 
-        timer(5) do
+        timer(20) do
+	  # todo add red?
           close
         end
       end
