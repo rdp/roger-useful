@@ -32,7 +32,7 @@ Shoes.app :height => 200, :width => 200 do
     @@shared.module_eval {
      def restart
      
-     timer(@@interval) do
+     timer(@@interval*60) do
       window :width => 1000, :height => 1000 do
         para "yo yo sleepy sleepy " + @@pause_time.to_s + "s!" 
         timer(@@pause_time) do
