@@ -2,7 +2,7 @@
 # A utility designed to force you to take breaks every so often
 # From your computer.
 # It does this by you tell it how often you'd like a breather.
-# It pops up a breather during that time for 20s.
+# It pops up a breather during that time for X s.
 # It's a freeware competitor to break reminder.
 # Built using Ruby's shoes toolkit.
 # 
@@ -17,19 +17,34 @@ Shoes.app :height => 200, :width => 200 do
      @counter.text = e.text.to_i.to_s
   end
   @counter = strong(a.text)
-  b = para "every ", @counter, " minutes"
+  b = para "every ", @counter, " minutes pause for "
+
+  c = edit_line('20') { |e| }
+
+  d = para "s"
   button "select" do
     @@interval = a.text.to_f
+    @@pause_time = c.text.to_f
     Shoes.debug @@interval
-    timer(@@interval*60) do
+    @@spawner = self
+    @@shared = Module.new
+    self.class.class_eval { include @@shared }
+    @@shared.module_eval {
+     def restart
+     
+     timer(@@interval) do
       window :width => 1000, :height => 1000 do
-        para "yo yo sleepy sleepy 20s!" 
-        timer(20) do
-	  # todo add red?
+        para "yo yo sleepy sleepy " + @@pause_time.to_s + "s!" 
+        timer(@@pause_time) do
+          @@spawner.restart  # has to be before close. Odd.
           close
         end
       end
-    end
+     end
+     end
+    }
+    restart
+    #close # odd
     
   end
     
