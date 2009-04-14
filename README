@@ -1,8 +1,12 @@
 A collection of [mostly rubyish] utilities.  See the different folders for more complete descriptions.
 
-unique_require: allow Ruby 1.8.x to only require a file once, regardless of the different path strings they pass to require a file.
+=================
 
-micro_pause: a shoes app that pops up and reminds you to take carpal tunnel breaks.
+unique_require: allows Ruby 1.8.x to only require a file once, regardless of the different path strings used to require a file.
 
-drive_speed_test: a ruby script to test how fast a hard drive runs.  Creates a large file then many files, outputes how long it took [extremely simple].
+micro_pause: a ruby shoes app that pops up and reminds you to take carpal tunnel breaks.
+
+drive_speed_test: a ruby script to test how fast a hard drive runs.  Creates a large file then many files, outputes how long it took [extremely simple drive speed test].
+
+old-useful. Contains many of the [somewhat useful] files from http://code.google.com/p/ruby-roger-useful-functions/
 
