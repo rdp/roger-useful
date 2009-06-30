@@ -1,14 +1,20 @@
+# stolen from the gnuplot gem
+# and then modified
   puts 'syntax: binary_name'
+  return unless ARGV[0]
   def which ( bin )
     success = false
-    puts bin if File::executable? bin
+    path = '.' + File::PATH_SEPARATOR + ENV['PATH']
 
-    path = ENV['PATH'] # || ENV['WHAT_EVER_WINDOWS_PATH_VAR_IS']
     path.split(File::PATH_SEPARATOR).each do |dir|
-      candidate = File::join dir, bin.strip
+      candidates = Dir.glob (dir.gsub("\\", "/") + '/' + bin.strip)
+      for candidate in candidates
       if File::executable? candidate
          puts candidate
          success = true
+      elsif File::exist? candidate
+        puts candidate + ' is not executable'
+      end
       end
     end
 
