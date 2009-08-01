@@ -10,6 +10,4 @@ drive_speed_test: a ruby script to test how fast a hard drive runs.  Creates a l
 
 old-useful. Contains many of the [somewhat useful] files from http://code.google.com/p/ruby-roger-useful-functions/
 
-which: the linux "which" command re-written in ruby [and also windows friendlier as it handles bat files]
-
 Note: some older useful ruby/rails utilities may also be found at http://code.google.com/p/ruby-roger-useful-functions [english like queries, table syncer, named parameters]
